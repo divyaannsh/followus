@@ -1,12 +1,15 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 
-const uri = process.env.MONGO_URI
-const client = new MongoClient(uri);
+const uri = process.env.MONGO_URI || "";
+const client = uri ? new MongoClient(uri) : null;
 const dbName = "templates";
 const collectionName = "template01";
 
 async function connectToDb() {
+    if (!client) {
+        throw new Error("MongoDB client not initialized. Check MONGO_URI environment variable.");
+    }
     await client.connect();
     const database = client.db(dbName);
     return database.collection(collectionName);
@@ -85,7 +88,7 @@ export async function DELETE(req) {
 export async function PATCH(req) {
     try {
         const body = await req.json();
-        const { id, isSelected,type } = body;
+        const { id, isSelected, type } = body;
 
         if (!id) {
             return NextResponse.json({ message: "Invalid data" }, { status: 400 });
@@ -99,7 +102,7 @@ export async function PATCH(req) {
         }
 
         // Update the selected template
-        const result = await collection.updateOne({ _id: new ObjectId(id) }, { $set: { isSelected}, $set: { type } });
+        const result = await collection.updateOne({ _id: new ObjectId(id) }, { $set: { isSelected }, $set: { type } });
 
         if (result.modifiedCount === 0) {
             return NextResponse.json({ message: "No template found with the provided ID" }, { status: 404 });

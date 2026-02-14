@@ -5,23 +5,28 @@ import AWS from 'aws-sdk';
 import { v4 as uuidv4 } from 'uuid';
 import { NextResponse } from "next/server";
 
-const uri = process.env.MONGO_URI;
-const client = new MongoClient(uri);
+const uri = process.env.MONGO_URI || "";
+const client = uri ? new MongoClient(uri) : null;
 const dbName = "sociaTreeAuth";
 const collectionName = "sociaTreeAuth01";
-const JWT_SECRET = "123321"; // Secure secret key
+const JWT_SECRET = process.env.JWT_SECRET || "123321";
 
 async function connectToDb() {
+  if (!client) {
+    throw new Error("MongoDB client not initialized. Check MONGO_URI environment variable.");
+  }
   await client.connect();
   const database = client.db(dbName);
   return database.collection(collectionName);
 }
 
-const s3 = new AWS.S3({
+const s3Config = {
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
-});
+  region: process.env.AWS_REGION || "ap-south-1"
+};
+
+const s3 = s3Config.accessKeyId && s3Config.secretAccessKey ? new AWS.S3(s3Config) : null;
 
 const bucketName = process.env.AWS_BUCKET_NAME;
 
@@ -132,10 +137,14 @@ export async function PUT(req) {
     if (whatsAppLink) updateData.whatsAppLink = whatsAppLink;
     if (youtube) updateData.youtube = youtube;
 
-    
+
 
     // Handle image upload
     if (profileImage && profileImage.size > 0) {
+      if (!s3 || !bucketName) {
+        return NextResponse.json({ message: "S3 configuration missing. Cannot upload image." }, { status: 500 });
+      }
+
       const uniqueFileName = `${uuidv4()}_${profileImage.name}`;
       const uploadParams = {
         Bucket: bucketName,
@@ -143,10 +152,6 @@ export async function PUT(req) {
         Body: Buffer.from(await profileImage.arrayBuffer()),
         ContentType: profileImage.type
       };
-
-      // if(profileImage &&  profileImage.size > 0){
-      //   const uploadFileName  = `${uuidv4()}_${profileImage.name}`
-      // }
 
       const uploadResult = await s3.upload(uploadParams).promise();
       updateData.profileImage = uploadResult.Location;

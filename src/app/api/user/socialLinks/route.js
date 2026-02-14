@@ -1,12 +1,15 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 
-const uri = process.env.MONGO_URI;
-const client = new MongoClient(uri);
+const uri = process.env.MONGO_URI || "";
+const client = uri ? new MongoClient(uri) : null;
 const dbName = "LinkManager";
 const collectionName = "LinkManager01";
 
 async function connectToDb() {
+    if (!client) {
+        throw new Error("MongoDB client not initialized. Check MONGO_URI environment variable.");
+    }
     await client.connect();
     const database = client.db(dbName);
     return database.collection(collectionName);

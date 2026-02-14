@@ -2,56 +2,59 @@
 import { MongoClient } from "mongodb";
 import { NextResponse } from "next/server";
 
-const uri = process.env.MONGO_URI
-const client = new MongoClient(uri);
+const uri = process.env.MONGO_URI || "";
+const client = uri ? new MongoClient(uri) : null;
 const dbName = "templates";
 const collectionName = "chooseTemplate";
 
 async function connectToDb() {
-    if (!client.topology || !client.topology.isConnected()) {
-        await client.connect();
-    }
-    const database = client.db(dbName);
-    return database.collection(collectionName);
+  if (!client) {
+    throw new Error("MongoDB client not initialized. Check MONGO_URI environment variable.");
+  }
+  if (!client.topology || !client.topology.isConnected()) {
+    await client.connect();
+  }
+  const database = client.db(dbName);
+  return database.collection(collectionName);
 }
 
 export async function POST(req) {
-    try {
-        const body = await req.json();
-        const { username, templateId, profileName, bio, image, linksData, bgcolor } = body;
+  try {
+    const body = await req.json();
+    const { username, templateId, profileName, bio, image, linksData, bgcolor } = body;
 
-        if (!templateId || !username) {
-            return NextResponse.json({ error: "username  and Template ID are required" }, { status: 400 });
-        }
-
-        const collection = await connectToDb();
-        const user = await collection.findOne({ username });
-
-        if (user) {
-            const updateResult = await collection.updateOne(
-                { username },
-                {
-                    $set: {
-                        selectedTemplate: templateId,
-                        profileName,
-                        bio,
-                        image,
-                        linksData,
-                        bgcolor,
-                    },
-                }
-            );
-            if (updateResult.modifiedCount === 0) {
-                return NextResponse.json({ error: "Failed to update template selection" }, { status: 500 });
-            }
-        } else {
-            await collection.insertOne({ username, selectedTemplate: templateId, profileName, bio, image, linksData, bgcolor });
-        }
-        return NextResponse.json({ message: "Template selected successfully", selectedTemplate: templateId }, { status: 200 });
-    } catch (error) {
-        console.error("Error selecting template:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    if (!templateId || !username) {
+      return NextResponse.json({ error: "username  and Template ID are required" }, { status: 400 });
     }
+
+    const collection = await connectToDb();
+    const user = await collection.findOne({ username });
+
+    if (user) {
+      const updateResult = await collection.updateOne(
+        { username },
+        {
+          $set: {
+            selectedTemplate: templateId,
+            profileName,
+            bio,
+            image,
+            linksData,
+            bgcolor,
+          },
+        }
+      );
+      if (updateResult.modifiedCount === 0) {
+        return NextResponse.json({ error: "Failed to update template selection" }, { status: 500 });
+      }
+    } else {
+      await collection.insertOne({ username, selectedTemplate: templateId, profileName, bio, image, linksData, bgcolor });
+    }
+    return NextResponse.json({ message: "Template selected successfully", selectedTemplate: templateId }, { status: 200 });
+  } catch (error) {
+    console.error("Error selecting template:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 
