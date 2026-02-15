@@ -3,8 +3,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import HomeBanner1 from "../../../public/img/home1.png";
 import { useRouter } from 'next/navigation';
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { useSelector } from 'react-redux';
 
 const ClaimSociotree = () => {
@@ -35,17 +34,7 @@ const ClaimSociotree = () => {
       }}
     >
       {/* Your content here */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+
       <div className="mx-auto grid grid-cols-1 lg:grid-cols-2 items-center gap-8 ">
         {/* Left Side Content */}
         <div className="text-center lg:text-left">

@@ -2,7 +2,7 @@ import Footer from "@/components/common/footer";
 import Header from "@/components/home/header";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import axiosInstance from "utils/axiosInstance";
 
 const ForgotPassword = () => {
@@ -52,7 +52,7 @@ const ForgotPassword = () => {
         <>
             <Header />
             <div className="flex min-h-screen items-center justify-center bg-gray-100">
-                <ToastContainer position="top-right" autoClose={3000} />
+
                 <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-2xl font-bold text-center text-gray-700 mb-4">Forgot Password</h2>
                     <form onSubmit={handlePasswordReset}>

@@ -13,7 +13,7 @@ import FacebookIcon from '@mui/icons-material/Facebook';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import SpecialTemplates from "./specialTemplate";
 
 const Template = () => {
@@ -39,6 +39,25 @@ const Template = () => {
     fetchTemplates();
   }, []);
 
+  useEffect(() => {
+    if (templates.length > 0 && templates.some(t => t.displayColor === "#fff")) {
+      const colors = [
+        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)",
+        "linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)",
+        "linear-gradient(120deg, #f6d365 0%, #fda085 100%)",
+        "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
+        "linear-gradient(135deg, #434343 0%, #000000 100%)",
+        "linear-gradient(135deg, #0cebeb 0%, #20e3b2 50%, #29ffc6 100%)"
+      ];
+      const updatedTemplates = templates.map((t, idx) => ({
+        ...t,
+        displayColor: t.bgcolor || colors[idx % colors.length]
+      }));
+      setTemplates(updatedTemplates);
+    }
+  }, [templates.length]);
+
   const handleSelectType = (selectedType) => {
     setSelectedType(selectedType.name);
     if (selectedType.name === "All") {
@@ -52,17 +71,18 @@ const Template = () => {
   const fetchTemplates = async () => {
     try {
       const response = await axios.get("/api/user/template/templates");
-      const selectedTemplateRes = await axios.get(`/api/user/template/chooseTemplate?username=${username}`);
+      const selectedTemplateRes = username ? await axios.get(`/api/user/template/chooseTemplate?username=${username}`) : { data: null };
 
       const selectedTemplateId = selectedTemplateRes.data?.templateId;
 
-      const updatedTemplates = response.data.data.map((template) => ({
+      // Initial template setup without gradients, gradients will be applied by the useEffect
+      const initialTemplates = response.data.data.map((template) => ({
         ...template,
         isSelected: template._id === selectedTemplateId,
+        displayColor: template.bgcolor || "#fff" // Default to white or existing bgcolor
       }));
 
-      setStoreTemplates(response.data.data);
-      setTemplates(updatedTemplates);
+      setTemplates(initialTemplates); // Set templates, then useEffect will apply gradients
     } catch (error) {
       console.error("Error fetching templates:", error);
     }
@@ -72,11 +92,17 @@ const Template = () => {
   };
 
   const handleSelectTemplate = async (selectedTemplate) => {
-    if (selectedTemplate.isSelected) return;
+    // If user is not logged in, we can still "open" it or show a preview
+    // For now, let's allow the interaction to happen, but warn only on actual DB update
     if (!username) {
-      toast.error("Please login to select a template");
+      // Logic for "opening" without selecting
+      // We could set a 'preview' state here if we had a modal
+      // But let's just show the toast if they are definitely trying to 'apply' it
+      toast.info("Opening preview... Login to apply this template to your profile.");
       return;
     }
+
+    if (selectedTemplate.isSelected) return;
 
     try {
       const response = await axios.post("/api/user/template/chooseTemplate", {
@@ -86,7 +112,7 @@ const Template = () => {
         bio: selectedTemplate.bio,
         image: selectedTemplate.image,
         linksData: selectedTemplate.linksData,
-        bgcolor: selectedTemplate.bgcolor,
+        bgcolor: selectedTemplate.displayColor,
       });
 
       if (response.status === 200) {
@@ -115,18 +141,7 @@ const Template = () => {
 
   return (
     <>
-      <Box sx={{ width: "100%", mt: 10 }}>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
+      <Box sx={{ width: "100%", mt: 10, backgroundColor: "#fff" }}>
         <Header />
         {/* Hero Section */}
         <Box sx={{ py: 8, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
@@ -168,7 +183,7 @@ const Template = () => {
         </Box>
 
         {/* Filter Section */}
-        <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 1.5, mt: 4, px: 2 }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 1.5, py: 4, px: 2, backgroundColor: "#fff" }}>
           {typesOfTemplates?.map((label) => (
             <Button
               key={label.id}
@@ -208,56 +223,155 @@ const Template = () => {
                   onClick={() => handleSelectTemplate(itm)}
                   sx={{
                     width: "280px",
-                    height: "560px", // Approximate mobile aspect ratio
-                    backgroundColor: itm?.bgcolor || "#fff",
-                    borderRadius: "40px",
-                    border: itm.isSelected ? "4px solid #3b82f6" : "8px solid #1e293b", // Phone Bezel
+                    height: "560px",
+                    background: itm?.displayColor || "#fff",
+                    borderRadius: "45px",
+                    border: itm.isSelected ? "6px solid #3b82f6" : "10px solid #111827", // Deeper bezel
                     overflow: "hidden",
                     position: "relative",
                     cursor: "pointer",
-                    transition: "transform 0.2s ease-in-out, box-shadow 0.2s",
+                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                     "&:hover": {
-                      transform: "translateY(-5px)",
-                      boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+                      transform: "translateY(-10px) scale(1.02)",
+                      boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.25)",
                     },
                     display: "flex",
                     flexDirection: "column",
                   }}
                 >
-                  {/* Notch/island representation - optional */}
-                  {/* <Box sx={{ position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)", width: "80px", height: "20px", bg: "black", borderRadius: "10px", zIndex: 10 }} /> */}
+                  {/* Speaker Grill Mockup */}
+                  <Box sx={{
+                    position: "absolute",
+                    top: 20,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "60px",
+                    height: "6px",
+                    backgroundColor: "#111827",
+                    borderRadius: "3px",
+                    opacity: 0.3,
+                    zIndex: 2
+                  }} />
 
-                  <Box className="flex flex-col items-center pt-10 px-4 space-y-3 flex-grow overflow-y-auto no-scrollbar" sx={{ pb: 4 }}>
-                    <Image
-                      src={itm.image}
-                      alt={itm.profileName}
-                      width={80}
-                      height={80}
-                      className="rounded-full border-2 border-white/20 object-cover"
-                      style={{ width: "80px", height: "80px" }}
-                    />
-                    <Typography variant="h6" className="text-white font-bold text-center leading-tight">
+                  {/* Decorative Graphics */}
+                  <Box sx={{
+                    position: "absolute",
+                    top: "-10%",
+                    right: "-10%",
+                    width: "150px",
+                    height: "150px",
+                    background: "rgba(255,255,255,0.15)",
+                    borderRadius: "50%",
+                    filter: "blur(30px)",
+                    zIndex: 0
+                  }} />
+                  <Box sx={{
+                    position: "absolute",
+                    bottom: "20%",
+                    left: "-10%",
+                    width: "120px",
+                    height: "120px",
+                    background: "rgba(255,255,255,0.1)",
+                    borderRadius: "50%",
+                    filter: "blur(20px)",
+                    zIndex: 0
+                  }} />
+
+                  <Box className="flex flex-col items-center pt-14 px-5 space-y-4 flex-grow overflow-y-auto no-scrollbar" sx={{ pb: 6, position: "relative", zIndex: 1 }}>
+                    <Box sx={{
+                      width: "90px",
+                      height: "90px",
+                      minWidth: "90px",
+                      minHeight: "90px",
+                      flexShrink: 0,
+                      borderRadius: "50%",
+                      overflow: "hidden",
+                      border: "4px solid rgba(255,255,255,0.4)",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                      backgroundColor: "rgba(255,255,255,0.1)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                    }}>
+                      <Image
+                        src={itm.image}
+                        alt={itm.profileName}
+                        width={100}
+                        height={100}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block"
+                        }}
+                      />
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        color: "white",
+                        fontWeight: 800,
+                        textAlign: "center",
+                        textShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                      }}
+                    >
                       {itm.profileName}
                     </Typography>
-                    <Typography className="text-white/80 text-xs text-center px-2 line-clamp-3">
+                    <Typography sx={{
+                      color: "rgba(255,255,255,0.9)",
+                      fontSize: "13px",
+                      textAlign: "center",
+                      lineHeight: 1.5,
+                      fontWeight: 500
+                    }}>
                       {itm.bio}
                     </Typography>
 
-                    <Box className="w-full space-y-2 mt-4">
-                      {itm.linksData.slice(0, 4).map((link) => ( // Show only first few links to fit
-                        <Box key={link.id} className="w-full rounded-full bg-white/90 py-2.5 px-3 text-center shadow-sm">
-                          <Typography className="text-gray-800 text-xs font-medium truncate">
+                    <Box className="w-full space-y-3 mt-6">
+                      {itm.linksData.slice(0, 5).map((link) => (
+                        <Box
+                          key={link.id}
+                          component="a"
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          sx={{
+                            display: "block",
+                            textDecoration: "none",
+                            borderRadius: "12px",
+                            backgroundColor: "rgba(255,255,255,0.95)",
+                            py: 1.5,
+                            px: 2,
+                            textAlign: "center",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                            transition: "all 0.2s",
+                            "&:hover": {
+                              transform: "scale(1.02)",
+                              backgroundColor: "#fff"
+                            }
+                          }}
+                        >
+                          <Typography sx={{ color: "#111827", fontSize: "14px", fontWeight: 700 }}>
                             {link.title}
                           </Typography>
                         </Box>
                       ))}
                     </Box>
 
-                    {/* Social Icons */}
-                    <Box className="flex justify-center gap-3 mt-auto pt-4">
-                      <InstagramIcon sx={{ color: "white", fontSize: 20 }} />
-                      <FacebookIcon sx={{ color: "white", fontSize: 20 }} />
-                      <WhatsAppIcon sx={{ color: "white", fontSize: 20 }} />
+                    {/* Social Icons Container */}
+                    <Box className="flex justify-center gap-5 mt-auto pt-6 pb-2" onClick={(e) => e.stopPropagation()}>
+                      <Box sx={{ backgroundColor: "rgba(255,255,255,0.2)", p: 1, borderRadius: "50%", display: "flex", cursor: "pointer" }}>
+                        <InstagramIcon sx={{ color: "white", fontSize: 24 }} />
+                      </Box>
+                      <Box sx={{ backgroundColor: "rgba(255,255,255,0.2)", p: 1, borderRadius: "50%", display: "flex", cursor: "pointer" }}>
+                        <FacebookIcon sx={{ color: "white", fontSize: 24 }} />
+                      </Box>
+                      <Box sx={{ backgroundColor: "rgba(255,255,255,0.2)", p: 1, borderRadius: "50%", display: "flex", cursor: "pointer" }}>
+                        <WhatsAppIcon sx={{ color: "white", fontSize: 24 }} />
+                      </Box>
                     </Box>
                   </Box>
                 </Box>

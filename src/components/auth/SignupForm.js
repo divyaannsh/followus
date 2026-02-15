@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { signUpRequest } from "@/redux/slices/authSlice";
 import SignImage from "../../../public/img/loginImage.jpg";
@@ -144,13 +143,12 @@ export default function SignupForm() {
         {/* Right side - Image */}
         <div className="hidden md:flex md:w-1/2 items-center justify-center bg-gray-100">
           <div className="w-1/2">
-            <Image src={SignImage} alt="Signup" objectFit="cover"/>
+            <Image src={SignImage} alt="Signup" objectFit="cover" />
           </div>
         </div>
       </div>
 
-      {/* Toast Notifications */}
-      <ToastContainer position="top-right" autoClose={3000} />
+
     </>
   );
 }

@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { loginRequest } from "@/redux/slices/authSlice";
 import Image from "next/image";
 
@@ -26,7 +25,7 @@ export default function LoginForm() {
 
   return (
     <div className="flex min-h-screen">
-      <ToastContainer position="top-right" autoClose={3000} />
+
 
       {/* Left Section: Login Form */}
       <div className="w-full sm:w-1/2 bg-gray-700 text-white flex flex-col justify-center px-10">
@@ -80,7 +79,7 @@ export default function LoginForm() {
       </div>
 
       <div className="w-1/2 hidden sm:block">
-      <img src="/img/loginImage.jpg" alt="Signup" className="w-full h-full" />
+        <img src="/img/loginImage.jpg" alt="Signup" className="w-full h-full" />
       </div>
 
       {/* Right Section: Image */}

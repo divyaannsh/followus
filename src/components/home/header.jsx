@@ -8,7 +8,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useRouter } from "next/router";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const Header = () => {
   const router = useRouter();
@@ -95,8 +95,6 @@ const Header = () => {
       <Link href="/" className="hidden md:block">
         <Image src={MainLogo} alt="logo" width={50} height={50} className="cursor-pointer" />
       </Link>
-
-      <ToastContainer position="top-right" autoClose={3000} />
 
       {/* Desktop Navigation */}
       <nav className="hidden md:flex items-center space-x-6 ml-6">

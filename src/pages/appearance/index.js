@@ -2,8 +2,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useSelector } from "react-redux"
 import axios from "axios"
-import { toast, ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
+import { toast } from "react-toastify"
 import PagesList from "@/components/common/pagesList"
 
 export default function Appearance() {
@@ -38,7 +37,7 @@ export default function Appearance() {
       setAvatarPreview(URL.createObjectURL(file))
     }
   }
-  
+
   const handleUpdateProfileImage = async (e) => {
     e.preventDefault()
     try {
@@ -63,17 +62,7 @@ export default function Appearance() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+
       <PagesList />
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md mb-6">

@@ -6,8 +6,7 @@ import Image from "next/image"
 import { Copy, Edit, Share2, Trash2, Plus, ArrowRight, Download } from "lucide-react"
 import { useSelector } from "react-redux"
 import axios from "axios"
-import { toast, ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
+import { toast } from "react-toastify"
 import axiosInstance from "utils/axiosInstance"
 import { faInstagram, faTwitter } from '@fortawesome/free-brands-svg-icons';
 import { faFacebook } from '@fortawesome/free-brands-svg-icons';
@@ -19,7 +18,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import DialogModal from "@/components/common/dialogModal"
 import Link from "next/link"
 import PagesList from "@/components/common/pagesList"
-import { Alert, Button, Input,CircularProgress } from "@mui/material"
+import { Alert, Button, Input, CircularProgress } from "@mui/material"
 import { faTimes } from "@fortawesome/free-solid-svg-icons"
 
 export default function AdminPage() {
@@ -41,7 +40,7 @@ export default function AdminPage() {
     avatar: null,
   })
 
-  
+
   const username = useSelector((state) => state.auth.user)
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [profileUrl, setProfileUrl] = useState("");
@@ -58,9 +57,9 @@ export default function AdminPage() {
     fetchProfile()
   }, [username])
 
-  console.log("userProfile",userProfile);
-  
-   const socialPlatforms = userProfile
+  console.log("userProfile", userProfile);
+
+  const socialPlatforms = userProfile
     ? [
       { id: "youtube", url: userProfile.youtube, icon: faYoutube, color: "text-red-600" },
       { id: "whatsapp", url: userProfile.whatsAppLink ? `https://wa.me/${userProfile.whatsAppLink}` : null, icon: faWhatsapp, color: "text-green-500" },
@@ -168,8 +167,8 @@ export default function AdminPage() {
   };
 
 
-  console.log("savedLinks",savedLinks);
-  
+  console.log("savedLinks", savedLinks);
+
   const handleEditLink2 = async (e) => {
     e.preventDefault();
     if (!formData2.url.trim()) {
@@ -258,76 +257,66 @@ export default function AdminPage() {
   }
 
   const fetchTemplates = async () => {
-  try {
-    const response = await fetch(`/api/user/template/chooseTemplate?username=${username}`);
-    const result = await response.json();
+    try {
+      const response = await fetch(`/api/user/template/chooseTemplate?username=${username}`);
+      const result = await response.json();
 
-    if (result.success) {
-      setTemplates(result.data);
-    } else {
-      console.error("Error:", result.message);
+      if (result.success) {
+        setTemplates(result.data);
+      } else {
+        console.error("Error:", result.message);
+      }
+    } catch (error) {
+      console.error("Fetch failed:", error);
+    } finally {
+      setLoading(false); // Stop loading after fetch completes
     }
-  } catch (error) {
-    console.error("Fetch failed:", error);
-  } finally {
-    setLoading(false); // Stop loading after fetch completes
-  }
-};
+  };
 
   useEffect(() => {
     fetchTemplates();
   }, []);
 
   useEffect(() => {
-  if (userProfile) {
-    const initialLinks = {
-      youtube: userProfile.youtube || "",
-      whatsapp: userProfile.whatsAppLink ? `https://wa.me/${userProfile.whatsAppLink}` : "",
-      Twitlink: userProfile.Twitlink || "",
-      Fblink: userProfile.Fblink || "",
-      Instalink: userProfile.Instalink || "",
-    };
-    setSavedLinks(initialLinks);
+    if (userProfile) {
+      const initialLinks = {
+        youtube: userProfile.youtube || "",
+        whatsapp: userProfile.whatsAppLink ? `https://wa.me/${userProfile.whatsAppLink}` : "",
+        Twitlink: userProfile.Twitlink || "",
+        Fblink: userProfile.Fblink || "",
+        Instalink: userProfile.Instalink || "",
+      };
+      setSavedLinks(initialLinks);
+    }
+  }, [userProfile]);
+
+
+  if (loading) {
+    return (
+      <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-100 bg-opacity-50 z-50">
+        <CircularProgress size={60} color="primary" />
+      </div>
+    );
   }
-}, [userProfile]);
 
-
- if (loading) {
-  return (
-        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-100 bg-opacity-50 z-50">
-          <CircularProgress size={60} color="primary" />
-        </div>
-  );
-}
-
-if (!templates || templates.length === 0) {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-[90%] max-w-lg">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Go to Template Page, select a template, and come back here</h2>
-        <p className="text-lg text-gray-600 mb-6">You need to select a template to access this page.</p>
-        <div className="flex justify-center gap-6">
-          <Link href="/template" className="bg-gray-600 hover:bg-gray-900 text-white px-6 py-3 rounded-lg shadow-md transition-all">
-            Go
-          </Link>
+  if (!templates || templates.length === 0) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-[90%] max-w-lg">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">Go to Template Page, select a template, and come back here</h2>
+          <p className="text-lg text-gray-600 mb-6">You need to select a template to access this page.</p>
+          <div className="flex justify-center gap-6">
+            <Link href="/template" className="bg-gray-600 hover:bg-gray-900 text-white px-6 py-3 rounded-lg shadow-md transition-all">
+              Go
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+
       <PagesList />
       <main className="flex-1 p-6">
         <div className="max-w-5xl mx-auto">
@@ -555,14 +544,61 @@ if (!templates || templates.length === 0) {
           </div>
         </div>
       </main>
-      
+
 
       <div className="flex flex-col items-center mt-10">
-        {/* Profile URL Section */}
-        <div className="bg-green-100 px-4 py-2 rounded-md mb-4">
-          <button className="text-gray-600 hover:text-blue-600 flex items-center" onClick={copyToClipboard}>
-            <Copy className="h-4 w-4 mr-2" /> {profileUrl}🔥🔥🔥
-          </button>
+        {/* Profile URL and QR Code Section */}
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center gap-4 w-full max-w-sm">
+            <div className="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(profileUrl)}`}
+                alt="Profile QR Code"
+                className="w-32 h-32"
+              />
+            </div>
+
+            <div className="w-full">
+              <div className="flex items-center justify-between bg-green-50 px-4 py-3 rounded-xl mb-3 border border-green-100">
+                <span className="text-sm font-medium text-green-700 truncate mr-2">
+                  {profileUrl}
+                </span>
+                <button
+                  onClick={copyToClipboard}
+                  className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600"
+                  title="Copy link"
+                >
+                  <Copy size={18} />
+                </button>
+              </div>
+
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}`);
+                    const blob = await response.json().then(() => { throw new Error("Expected image, got json") }).catch(async () => {
+                      const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}`);
+                      return res.blob();
+                    });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `followus-qr-${username}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    toast.success("QR Code downloaded!");
+                  } catch (error) {
+                    toast.error("Failed to download QR code");
+                  }
+                }}
+                className="w-full bg-black text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg active:scale-95"
+              >
+                <Download size={18} /> Download QR Code
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Mobile Preview */}
