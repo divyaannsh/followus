@@ -1,172 +1,187 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
-import Image from "next/image";
 import axios from "axios";
-import { Box, Card, CardMedia, Typography } from "@mui/material";
-import { faInstagram, faFacebook, faYoutube, faXTwitter, faWhatsapp, faLinkedin, faTwitter } from '@fortawesome/free-brands-svg-icons';
+import Image from "next/image";
+import { faInstagram, faFacebook, faXTwitter, faYoutube, faWhatsapp, faLinkedin, faTiktok } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-export default function PreviewPage() {
-  const [links, setLinks] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
+const SOCIAL_ICONS = {
+    Instalink: faInstagram,
+    Fblink: faFacebook,
+    Twitlink: faXTwitter,
+    youtube: faYoutube,
+    whatsapp: faWhatsapp,
+    linkedin: faLinkedin,
+    tiktok: faTiktok,
+};
 
-  const router = useRouter();
-  const { username } = router.query;
+export default function PublicProfile() {
+    const router = useRouter();
+    const { username } = router.query;
+    const [profile, setProfile] = useState(null);
+    const [links, setLinks] = useState([]);
+    const [template, setTemplate] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
 
-
-  const handleLinkClick = async (linkId) => {
-    try {
-      await axios.patch(`/api/user/socialLinks?id=${linkId}&type=click`);
-    } catch (error) {
-      console.error("Error updating link click count:", error);
-    }
-  };
-
-  const handleView = async (linkId) => {
-    try {
-      await axios.patch(`/api/user/socialLinks?id=${linkId}&type=view`);
-    } catch (error) {
-      console.error("Error updating link view count:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (links.length > 0) {
-      links.forEach((link) => {
-        handleView(link._id);
-      });
-    }
-  }, [links]);
-
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const response = await fetch(`/api/user/template/chooseTemplate?username=${username}`);
-        const result = await response.json();
-
-        if (result.success && result.data) {
-          setSelectedTemplate(result.data[0]);
-        } else {
-          console.error("Error:", result.message);
-        }
-      } catch (error) {
-        console.error("Fetch failed:", error);
-      }
+    // Detect referrer source from URL ?ref= param or document.referrer
+    const getSource = () => {
+        if (typeof window === "undefined") return "direct";
+        const params = new URLSearchParams(window.location.search);
+        const refParam = params.get("ref") || params.get("utm_source") || "";
+        const refHeader = document.referrer || "";
+        const ref = (refParam + refHeader).toLowerCase();
+        if (!ref) return "direct";
+        if (ref.includes("instagram")) return "instagram";
+        if (ref.includes("facebook") || ref.includes("fb.")) return "facebook";
+        if (ref.includes("twitter") || ref.includes("t.co") || ref.includes("x.com")) return "twitter";
+        if (ref.includes("whatsapp") || ref.includes("wa.me")) return "whatsapp";
+        if (ref.includes("youtube") || ref.includes("youtu.be")) return "youtube";
+        if (ref.includes("linkedin")) return "linkedin";
+        if (ref.includes("tiktok")) return "tiktok";
+        return "other";
     };
-    if (username) fetchTemplates();
-  }, [username]);
 
-
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (username) {
+    const trackEvent = useCallback(async (type, link = null) => {
+        if (!username) return;
         try {
-          const response = await axios.get(`/api/auth/signup?username=${username}`);
-          const profileData = Array.isArray(response.data) ? response.data[0] : response.data;
-          setUserProfile(profileData);
-        } catch (error) {
-          // console.error("Error fetching profile:", error.response?.data || error.message);
+            await axios.post("/api/user/analytics/track", {
+                username,
+                type,
+                linkId: link?._id || null,
+                linkTitle: link?.title || null,
+                referrer: getSource(),
+            });
+        } catch {
+            // fail silently — never block user navigation
         }
-      }
+    }, [username]);
+
+    useEffect(() => {
+        if (!username) return;
+        const fetchAll = async () => {
+            try {
+                const [profileRes, linksRes, templateRes] = await Promise.all([
+                    axios.get(`/api/auth/signup?username=${username}`).catch(() => null),
+                    axios.get(`/api/user/socialLinks?username=${username}`).catch(() => null),
+                    axios.get(`/api/user/template/chooseTemplate?username=${username}`).catch(() => null),
+                ]);
+
+                if (!profileRes?.data?.[0]) {
+                    setNotFound(true);
+                    return;
+                }
+                setProfile(profileRes.data[0]);
+                setLinks((linksRes?.data || []).filter((l) => l.isVisible));
+                setTemplate(templateRes?.data?.data?.[0] || null);
+
+                // Track profile view
+                trackEvent("view");
+            } catch {
+                setNotFound(true);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAll();
+    }, [username, trackEvent]);
+
+    const handleLinkClick = async (link, e) => {
+        e.preventDefault();
+        await trackEvent("click", link);
+        const url = link.url.startsWith("http") ? link.url : `https://${link.url}`;
+        window.open(url, "_blank", "noopener,noreferrer");
     };
-    fetchProfile();
-  }, [username]);
 
+    const socialKeys = ["Instalink", "Fblink", "Twitlink", "youtube", "whatsapp", "linkedin"];
 
-  // List of social links with icons
-  const socialLinks = userProfile
-    ? [
-      { id: "youtube", url: userProfile.youtube, icon: faYoutube, color: "text-red-600" },
-      { id: "whatsapp", url: userProfile.whatsAppLink ? `https://wa.me/${userProfile.whatsAppLink}` : null, icon: faWhatsapp, color: "text-green-500" },
-      { id: "twitter", url: userProfile.Twitlink, icon: faTwitter, color: "text-blue-400" },
-      { id: "facebook", url: userProfile.Fblink, icon: faFacebook, color: "text-blue-600" },
-      { id: "instagram", url: userProfile.Instalink, icon: faInstagram, color: "text-pink-500" },
-    ]
-    : [];
-
-
-
-  useEffect(() => {
-    const fetchLinks = async () => {
-      if (username) {
-        try {
-          const response = await axios.get(`/api/user/socialLinks?username=${username}`);
-          setLinks(response.data);
-        } catch (error) {
-        }
-      }
-    };
-    fetchLinks();
-  }, [username]);
-
-
-  return (
-    <div className="w-full h-screen flex justify-center items-center p-0">
-      {selectedTemplate && (
-        <Card
-          className="relative w-full h-full overflow-hidden border-0 transition-all cursor-pointer"
-          sx={{
-            background: selectedTemplate.bgcolor,
-            textAlign: "center",
-            padding: "20px",
-          }}
-        >
-          <Box className="flex flex-col items-center space-y-3">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white">
-              <Image
-                src={userProfile?.profileImage || ""}
-                alt={userProfile?.profileImage}
-                width={96}
-                height={96}
-                className="w-full h-full object-cover"
-              />
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
             </div>
-            <Typography variant="h5" className="text-white font-bold">
-              {userProfile?.username}
-            </Typography>
-            <Typography className="text-gray-200">
-              {userProfile?.Bio || selectedTemplate.bio}
-            </Typography>
-          </Box>
+        );
+    }
 
+    if (notFound) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+                <h1 className="text-white text-3xl font-bold">404</h1>
+                <p className="text-white/80">Profile not found</p>
+            </div>
+        );
+    }
 
-          <div className="flex items-center justify-center gap-4 p-4">
-            {socialLinks.map(
-              (button) =>
-                button.url && (
-                  <a key={button.id} href={button.url.startsWith("http") ? button.url : `https://${button.url}`} target="_blank" rel="noopener noreferrer">
-                    <button className={`bg-white text-black py-2 px-4 rounded-md hover:bg-gray-200 transition duration-300`}>
-                      <FontAwesomeIcon icon={button.icon} className={`w-6 h-6 ${button.color}`} />
-                    </button>
-                  </a>
-                )
-            )}
-          </div>
+    const bg = template?.bgcolor || "linear-gradient(135deg,#6366f1,#8b5cf6)";
+    const textColor = template?.color || "#ffffff";
+    const avatar = profile?.profileImage ||
+        "https://thumbs.dreamstime.com/b/vector-illustration-avatar-dummy-logo-collection-image-icon-stock-isolated-object-set-symbol-web-137160339.jpg";
 
-          <Box className="mt-6 space-y-2 w-full md:w-1/2 mx-auto">
-            {links?.filter(link => link?.isVisible).map((link) => (
-              <a
-                key={link.id}
-                href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
-                target="_blank"
-                onClick={() => handleLinkClick(link?._id)}
-                className="w-full py-2 border border-gray-300 text-base mb-3 text-center block hover:bg-gray-400 transition py-4 rounded-full"
-                style={{ bgcolor: selectedTemplate?.bgcolor || '#f3f4f6',
-                  color: selectedTemplate?.color || '#000'
+    return (
+        <div
+            className="min-h-screen flex items-center justify-center py-12 px-4"
+            style={{ background: bg }}
+        >
+            <div className="w-full max-w-sm flex flex-col items-center gap-5">
+                {/* Avatar */}
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl">
+                    <Image src={avatar} alt={profile?.username || "Avatar"} width={96} height={96} className="object-cover w-full h-full" />
+                </div>
 
-                 }}
-              >
-                {link.title}
-              </a>
-            ))}
+                {/* Name & Bio */}
+                <div className="text-center">
+                    <h1 className="text-xl font-bold" style={{ color: textColor }}>
+                        @{profile?.username}
+                    </h1>
+                    {profile?.Bio && (
+                        <p className="text-sm mt-1 opacity-80" style={{ color: textColor }}>
+                            {profile.Bio}
+                        </p>
+                    )}
+                </div>
 
-          </Box>
-        </Card>
-      )}
-    </div>
-  );
+                {/* Social Icons */}
+                <div className="flex gap-3">
+                    {socialKeys.map((key) => {
+                        const url = key === "whatsapp"
+                            ? (profile?.whatsAppLink ? `https://wa.me/${profile.whatsAppLink}` : null)
+                            : profile?.[key];
+                        if (!url || !SOCIAL_ICONS[key]) return null;
+                        return (
+                            <a
+                                key={key}
+                                href={url.startsWith("http") ? url : `https://${url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-9 h-9 rounded-full border border-white/20 bg-white/10 flex items-center justify-center hover:bg-white/25 transition-all"
+                            >
+                                <FontAwesomeIcon icon={SOCIAL_ICONS[key]} className="w-4 h-4" style={{ color: textColor }} />
+                            </a>
+                        );
+                    })}
+                </div>
+
+                {/* Links */}
+                <div className="w-full space-y-3">
+                    {links.map((link) => (
+                        <a
+                            key={link._id}
+                            href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
+                            onClick={(e) => handleLinkClick(link, e)}
+                            rel="noopener noreferrer"
+                            className="w-full py-3 px-6 rounded-full border border-white/25 bg-white/10 hover:bg-white/25 text-center font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] block"
+                            style={{ color: textColor }}
+                        >
+                            {link.title}
+                        </a>
+                    ))}
+                </div>
+
+                {/* Footer */}
+                <p className="text-xs mt-4 opacity-40" style={{ color: textColor }}>
+                    Powered by Followus
+                </p>
+            </div>
+        </div>
+    );
 }
