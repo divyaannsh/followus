@@ -48,6 +48,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!username) return // wait for Redux to hydrate
     if (typeof window !== "undefined") {
       setProfileUrl(`${window.location.origin}/${username}`)
     }
@@ -70,11 +71,12 @@ export default function AdminPage() {
   };
 
   const fetchLinks = async () => {
+    if (!username) return
     try {
       const response = await axios.get(`/api/user/socialLinks?username=${username}`)
-      setLinks(response.data)
+      setLinks(Array.isArray(response.data) ? response.data : [])
     } catch (error) {
-      toast.error("Error fetching links")
+      console.error("fetchLinks error:", error)
     }
   };
 
@@ -366,8 +368,8 @@ export default function AdminPage() {
                 <button
                   onClick={() => setOpenSocial(openSocial === platform.id ? null : platform.id)}
                   className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all duration-200 ${openSocial === platform.id
-                      ? "bg-gradient-to-br from-indigo-500 to-purple-500 border-transparent text-white shadow-md shadow-indigo-200"
-                      : "bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:shadow-md"
+                    ? "bg-gradient-to-br from-indigo-500 to-purple-500 border-transparent text-white shadow-md shadow-indigo-200"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:shadow-md"
                     }`}
                 >
                   <FontAwesomeIcon icon={platform.icon} className="w-5 h-5" />
