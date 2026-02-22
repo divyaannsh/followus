@@ -2,27 +2,26 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { Box, Button, ButtonGroup, Card, Grid, Typography, IconButton, CircularProgress } from "@mui/material";
-import { FilterList } from "@mui/icons-material";
+import {
+  Box, Button, Grid, Typography, CircularProgress,
+  Dialog, DialogContent, IconButton
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import Header from "./home/header";
-import TempInsta from "../../public/img/temp_insta.png";
-import Tempfb from "../../public/img/temp_fb.png";
-import Tempyt from "../../public/img/temp_yt.png";
 import { useSelector } from "react-redux";
-import FacebookIcon from '@mui/icons-material/Facebook';
-import InstagramIcon from '@mui/icons-material/Instagram';
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-
+import FacebookIcon from "@mui/icons-material/Facebook";
+import InstagramIcon from "@mui/icons-material/Instagram";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { toast } from "react-toastify";
-import SpecialTemplates from "./specialTemplate";
 
 const Template = () => {
   const [templates, setTemplates] = useState([]);
+  const [storeTemplates, setStoreTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedType, setSelectedType] = useState("All");
+  const [previewTemplate, setPreviewTemplate] = useState(null); // modal state
   const router = useRouter();
   const username = useSelector((state) => state.auth.user);
-  const [selectedType, setSelectedType] = useState("All");
-  const [storeTemplates, setStoreTemplates] = useState([]);
-  const [loading, setLoading] = useState(true)
 
   const typesOfTemplates = [
     { id: "1", name: "All" },
@@ -40,7 +39,7 @@ const Template = () => {
   }, []);
 
   useEffect(() => {
-    if (templates.length > 0 && templates.some(t => t.displayColor === "#fff")) {
+    if (templates.length > 0 && templates.some((t) => t.displayColor === "#fff")) {
       const colors = [
         "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)",
@@ -48,61 +47,63 @@ const Template = () => {
         "linear-gradient(120deg, #f6d365 0%, #fda085 100%)",
         "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
         "linear-gradient(135deg, #434343 0%, #000000 100%)",
-        "linear-gradient(135deg, #0cebeb 0%, #20e3b2 50%, #29ffc6 100%)"
+        "linear-gradient(135deg, #0cebeb 0%, #20e3b2 50%, #29ffc6 100%)",
       ];
       const updatedTemplates = templates.map((t, idx) => ({
         ...t,
-        displayColor: t.bgcolor || colors[idx % colors.length]
+        displayColor: t.bgcolor || colors[idx % colors.length],
       }));
       setTemplates(updatedTemplates);
+      setStoreTemplates(updatedTemplates);
     }
   }, [templates.length]);
 
-  const handleSelectType = (selectedType) => {
-    setSelectedType(selectedType.name);
-    if (selectedType.name === "All") {
+  const handleSelectType = (type) => {
+    setSelectedType(type.name);
+    if (type.name === "All") {
       setTemplates(storeTemplates);
     } else {
-      const filterTemplates = storeTemplates.filter((template) => template.type === selectedType.name);
-      setTemplates(filterTemplates);
+      setTemplates(storeTemplates.filter((t) => t.type === type.name));
     }
   };
 
   const fetchTemplates = async () => {
     try {
       const response = await axios.get("/api/user/template/templates");
-      const selectedTemplateRes = username ? await axios.get(`/api/user/template/chooseTemplate?username=${username}`) : { data: null };
-
+      const selectedTemplateRes = username
+        ? await axios.get(`/api/user/template/chooseTemplate?username=${username}`)
+        : { data: null };
       const selectedTemplateId = selectedTemplateRes.data?.templateId;
 
-      // Initial template setup without gradients, gradients will be applied by the useEffect
-      const initialTemplates = response.data.data.map((template) => ({
+      const initial = response.data.data.map((template) => ({
         ...template,
         isSelected: template._id === selectedTemplateId,
-        displayColor: template.bgcolor || "#fff" // Default to white or existing bgcolor
+        displayColor: template.bgcolor || "#fff",
       }));
 
-      setTemplates(initialTemplates); // Set templates, then useEffect will apply gradients
+      setTemplates(initial);
+      setStoreTemplates(initial); // FIX: also populate storeTemplates for filter
     } catch (error) {
       console.error("Error fetching templates:", error);
-    }
-    finally {
-      setLoading(false)
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSelectTemplate = async (selectedTemplate) => {
-    // If user is not logged in, we can still "open" it or show a preview
-    // For now, let's allow the interaction to happen, but warn only on actual DB update
+  // Clicking a card opens the preview modal
+  const handleCardClick = (template) => {
+    setPreviewTemplate(template);
+  };
+
+  const handleApplyTemplate = async () => {
     if (!username) {
-      // Logic for "opening" without selecting
-      // We could set a 'preview' state here if we had a modal
-      // But let's just show the toast if they are definitely trying to 'apply' it
-      toast.info("Opening preview... Login to apply this template to your profile.");
+      toast.info("Please log in to apply this template to your profile.");
+      router.push("/login");
       return;
     }
 
-    if (selectedTemplate.isSelected) return;
+    const selectedTemplate = previewTemplate;
+    if (!selectedTemplate) return;
 
     try {
       const response = await axios.post("/api/user/template/chooseTemplate", {
@@ -116,18 +117,18 @@ const Template = () => {
       });
 
       if (response.status === 200) {
-        setTemplates((prevTemplates) =>
-          prevTemplates.map((template) => ({
-            ...template,
-            isSelected: template._id === selectedTemplate._id,
-          }))
+        setTemplates((prev) =>
+          prev.map((t) => ({ ...t, isSelected: t._id === selectedTemplate._id }))
         );
+        toast.success("Template applied successfully!");
+        setPreviewTemplate(null);
         router.push("/admin");
       } else {
-        console.error("Failed to select template:", response.data.error);
+        toast.error("Failed to apply template.");
       }
     } catch (error) {
-      console.error("Error updating template selection:", error.response?.data || error.message);
+      console.error("Error applying template:", error.response?.data || error.message);
+      toast.error("Something went wrong. Please try again.");
     }
   };
 
@@ -143,6 +144,7 @@ const Template = () => {
     <>
       <Box sx={{ width: "100%", mt: 10, backgroundColor: "#fff" }}>
         <Header />
+
         {/* Hero Section */}
         <Box sx={{ py: 8, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
           <Grid container direction="column" alignItems="center" spacing={2}>
@@ -184,7 +186,7 @@ const Template = () => {
 
         {/* Filter Section */}
         <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 1.5, py: 4, px: 2, backgroundColor: "#fff" }}>
-          {typesOfTemplates?.map((label) => (
+          {typesOfTemplates.map((label) => (
             <Button
               key={label.id}
               onClick={() => handleSelectType(label)}
@@ -209,24 +211,20 @@ const Template = () => {
           ))}
         </Box>
 
-        {/* Templates Section */}
+        {/* Templates Grid */}
         <Box className="p-6 bg-white">
-          {/* <Typography variant="h4" className="text-center text-gray-800 font-bold mb-8">
-            Choose a Template
-          </Typography> */}
           <Grid container spacing={4} justifyContent="center" sx={{ mt: 2 }}>
             {templates?.map((itm) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={itm._id} display="flex" flexDirection="column" alignItems="center">
-
-                {/* Mobile Phone Mockup Container */}
+                {/* Mobile Phone Mockup */}
                 <Box
-                  onClick={() => handleSelectTemplate(itm)}
+                  onClick={() => handleCardClick(itm)}
                   sx={{
                     width: "280px",
                     height: "560px",
                     background: itm?.displayColor || "#fff",
                     borderRadius: "45px",
-                    border: itm.isSelected ? "6px solid #3b82f6" : "10px solid #111827", // Deeper bezel
+                    border: itm.isSelected ? "6px solid #3b82f6" : "10px solid #111827",
                     overflow: "hidden",
                     position: "relative",
                     cursor: "pointer",
@@ -240,95 +238,23 @@ const Template = () => {
                     flexDirection: "column",
                   }}
                 >
-                  {/* Speaker Grill Mockup */}
-                  <Box sx={{
-                    position: "absolute",
-                    top: 20,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "60px",
-                    height: "6px",
-                    backgroundColor: "#111827",
-                    borderRadius: "3px",
-                    opacity: 0.3,
-                    zIndex: 2
-                  }} />
+                  {/* Speaker */}
+                  <Box sx={{ position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", width: "60px", height: "6px", backgroundColor: "#111827", borderRadius: "3px", opacity: 0.3, zIndex: 2 }} />
 
-                  {/* Decorative Graphics */}
-                  <Box sx={{
-                    position: "absolute",
-                    top: "-10%",
-                    right: "-10%",
-                    width: "150px",
-                    height: "150px",
-                    background: "rgba(255,255,255,0.15)",
-                    borderRadius: "50%",
-                    filter: "blur(30px)",
-                    zIndex: 0
-                  }} />
-                  <Box sx={{
-                    position: "absolute",
-                    bottom: "20%",
-                    left: "-10%",
-                    width: "120px",
-                    height: "120px",
-                    background: "rgba(255,255,255,0.1)",
-                    borderRadius: "50%",
-                    filter: "blur(20px)",
-                    zIndex: 0
-                  }} />
+                  {/* Decorative blobs */}
+                  <Box sx={{ position: "absolute", top: "-10%", right: "-10%", width: "150px", height: "150px", background: "rgba(255,255,255,0.15)", borderRadius: "50%", filter: "blur(30px)", zIndex: 0 }} />
+                  <Box sx={{ position: "absolute", bottom: "20%", left: "-10%", width: "120px", height: "120px", background: "rgba(255,255,255,0.1)", borderRadius: "50%", filter: "blur(20px)", zIndex: 0 }} />
 
                   <Box className="flex flex-col items-center pt-14 px-5 space-y-4 flex-grow overflow-y-auto no-scrollbar" sx={{ pb: 6, position: "relative", zIndex: 1 }}>
-                    <Box sx={{
-                      width: "90px",
-                      height: "90px",
-                      minWidth: "90px",
-                      minHeight: "90px",
-                      flexShrink: 0,
-                      borderRadius: "50%",
-                      overflow: "hidden",
-                      border: "4px solid rgba(255,255,255,0.4)",
-                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
-                      backgroundColor: "rgba(255,255,255,0.1)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      position: "relative",
-                    }}>
-                      <Image
-                        src={itm.image}
-                        alt={itm.profileName}
-                        width={100}
-                        height={100}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          display: "block"
-                        }}
-                      />
+                    <Box sx={{ width: "90px", height: "90px", minWidth: "90px", minHeight: "90px", flexShrink: 0, borderRadius: "50%", overflow: "hidden", border: "4px solid rgba(255,255,255,0.4)", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", backgroundColor: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                      <Image src={itm.image} alt={itm.profileName} width={100} height={100} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </Box>
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        color: "white",
-                        fontWeight: 800,
-                        textAlign: "center",
-                        textShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                      }}
-                    >
+                    <Typography variant="h5" sx={{ color: "white", fontWeight: 800, textAlign: "center", textShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
                       {itm.profileName}
                     </Typography>
-                    <Typography sx={{
-                      color: "rgba(255,255,255,0.9)",
-                      fontSize: "13px",
-                      textAlign: "center",
-                      lineHeight: 1.5,
-                      fontWeight: 500
-                    }}>
+                    <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: "13px", textAlign: "center", lineHeight: 1.5, fontWeight: 500 }}>
                       {itm.bio}
                     </Typography>
-
                     <Box className="w-full space-y-3 mt-6">
                       {itm.linksData.slice(0, 5).map((link) => (
                         <Box
@@ -338,30 +264,12 @@ const Template = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          sx={{
-                            display: "block",
-                            textDecoration: "none",
-                            borderRadius: "12px",
-                            backgroundColor: "rgba(255,255,255,0.95)",
-                            py: 1.5,
-                            px: 2,
-                            textAlign: "center",
-                            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                            transition: "all 0.2s",
-                            "&:hover": {
-                              transform: "scale(1.02)",
-                              backgroundColor: "#fff"
-                            }
-                          }}
+                          sx={{ display: "block", textDecoration: "none", borderRadius: "12px", backgroundColor: "rgba(255,255,255,0.95)", py: 1.5, px: 2, textAlign: "center", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", transition: "all 0.2s", "&:hover": { transform: "scale(1.02)", backgroundColor: "#fff" } }}
                         >
-                          <Typography sx={{ color: "#111827", fontSize: "14px", fontWeight: 700 }}>
-                            {link.title}
-                          </Typography>
+                          <Typography sx={{ color: "#111827", fontSize: "14px", fontWeight: 700 }}>{link.title}</Typography>
                         </Box>
                       ))}
                     </Box>
-
-                    {/* Social Icons Container */}
                     <Box className="flex justify-center gap-5 mt-auto pt-6 pb-2" onClick={(e) => e.stopPropagation()}>
                       <Box sx={{ backgroundColor: "rgba(255,255,255,0.2)", p: 1, borderRadius: "50%", display: "flex", cursor: "pointer" }}>
                         <InstagramIcon sx={{ color: "white", fontSize: 24 }} />
@@ -376,24 +284,109 @@ const Template = () => {
                   </Box>
                 </Box>
 
-                {/* Template Name Below Card */}
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    mt: 2,
-                    fontWeight: 600,
-                    color: "#334155",
-                    textAlign: "center"
-                  }}
-                >
+                {/* Name below card */}
+                <Typography variant="subtitle1" sx={{ mt: 2, fontWeight: 600, color: "#334155", textAlign: "center" }}>
                   {itm.profileName}
                 </Typography>
-
               </Grid>
             ))}
           </Grid>
         </Box>
       </Box>
+
+      {/* ─── Preview Modal ─── */}
+      <Dialog
+        open={!!previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "24px",
+            overflow: "hidden",
+            background: previewTemplate?.displayColor || "#1e293b",
+            boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 0, position: "relative" }}>
+          {/* Close button */}
+          <IconButton
+            onClick={() => setPreviewTemplate(null)}
+            sx={{ position: "absolute", top: 12, right: 12, zIndex: 10, color: "white", backgroundColor: "rgba(0,0,0,0.3)", "&:hover": { backgroundColor: "rgba(0,0,0,0.5)" } }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          {previewTemplate && (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", pt: 6, pb: 5, px: 4, gap: 2, position: "relative", minHeight: "500px" }}>
+              {/* Glow blobs */}
+              <Box sx={{ position: "absolute", top: "-10%", right: "-5%", width: "200px", height: "200px", background: "rgba(255,255,255,0.15)", borderRadius: "50%", filter: "blur(40px)" }} />
+              <Box sx={{ position: "absolute", bottom: "10%", left: "-5%", width: "160px", height: "160px", background: "rgba(255,255,255,0.1)", borderRadius: "50%", filter: "blur(30px)" }} />
+
+              {/* Avatar */}
+              <Box sx={{ width: "110px", height: "110px", borderRadius: "50%", overflow: "hidden", border: "4px solid rgba(255,255,255,0.5)", boxShadow: "0 8px 32px rgba(0,0,0,0.2)", position: "relative", zIndex: 1 }}>
+                <Image src={previewTemplate.image} alt={previewTemplate.profileName} width={110} height={110} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </Box>
+
+              <Typography variant="h4" sx={{ color: "white", fontWeight: 800, textAlign: "center", zIndex: 1, textShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+                {previewTemplate.profileName}
+              </Typography>
+              <Typography sx={{ color: "rgba(255,255,255,0.85)", textAlign: "center", fontSize: "15px", zIndex: 1, mb: 1 }}>
+                {previewTemplate.bio}
+              </Typography>
+
+              {/* Links */}
+              <Box sx={{ width: "100%", maxWidth: "380px", display: "flex", flexDirection: "column", gap: 1.5, zIndex: 1 }}>
+                {previewTemplate.linksData.slice(0, 5).map((link) => (
+                  <Box
+                    key={link.id}
+                    component="a"
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ display: "block", textDecoration: "none", borderRadius: "14px", backgroundColor: "rgba(255,255,255,0.95)", py: 1.5, px: 2, textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", transition: "all 0.2s", "&:hover": { transform: "scale(1.02)" } }}
+                  >
+                    <Typography sx={{ color: "#111827", fontSize: "15px", fontWeight: 700 }}>{link.title}</Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              {/* Social Icons */}
+              <Box sx={{ display: "flex", gap: 2, mt: 1, zIndex: 1 }}>
+                {[InstagramIcon, FacebookIcon, WhatsAppIcon].map((Icon, i) => (
+                  <Box key={i} sx={{ backgroundColor: "rgba(255,255,255,0.2)", p: 1.2, borderRadius: "50%", display: "flex" }}>
+                    <Icon sx={{ color: "white", fontSize: 22 }} />
+                  </Box>
+                ))}
+              </Box>
+
+              {/* CTA Button */}
+              <Button
+                variant="contained"
+                onClick={handleApplyTemplate}
+                sx={{
+                  mt: 2,
+                  zIndex: 1,
+                  backgroundColor: "white",
+                  color: "#1e293b",
+                  fontWeight: 800,
+                  fontSize: "15px",
+                  px: 5,
+                  py: 1.5,
+                  borderRadius: "9999px",
+                  textTransform: "none",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                  "&:hover": { backgroundColor: "#f1f5f9", transform: "scale(1.03)" },
+                  transition: "all 0.2s",
+                }}
+              >
+                {username ? "Use This Template" : "Log in to Use"}
+              </Button>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

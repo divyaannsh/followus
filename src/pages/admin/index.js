@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Copy, Edit, Share2, Trash2, Plus, ArrowRight, Download } from "lucide-react"
+import { Copy, Edit, Share2, Trash2, Plus, ArrowRight, Download, X, ExternalLink, QrCode } from "lucide-react"
 import { useSelector } from "react-redux"
 import axios from "axios"
 import { toast } from "react-toastify"
@@ -18,8 +18,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import DialogModal from "@/components/common/dialogModal"
 import Link from "next/link"
 import PagesList from "@/components/common/pagesList"
-import { Alert, Button, Input, CircularProgress } from "@mui/material"
-import { faTimes } from "@fortawesome/free-solid-svg-icons"
+import { CircularProgress } from "@mui/material"
 
 export default function AdminPage() {
   const router = useRouter()
@@ -29,7 +28,7 @@ export default function AdminPage() {
   const [buttonUrls, setButtonUrls] = useState({});
   const [openSocial, setOpenSocial] = useState(null);
   const [formData2, setFormData2] = useState({ url: "" });
-  const [savedLinks, setSavedLinks] = useState({}); // To store updated links
+  const [savedLinks, setSavedLinks] = useState({});
   const [socialUrls, setSocialUrls] = useState([]);
   const [formData, setFormData] = useState({
     url: "",
@@ -40,14 +39,13 @@ export default function AdminPage() {
     avatar: null,
   })
 
-
   const username = useSelector((state) => state.auth.user)
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [profileUrl, setProfileUrl] = useState("");
   const [userProfile, setUserProfile] = useState();
   const [open, setOpen] = useState(false);
   const [isOpenFiled, setIsOpenFiled] = useState(false);
-  const [loading, setLoading] = useState(true); // New loading state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -56,8 +54,6 @@ export default function AdminPage() {
     fetchLinks()
     fetchProfile()
   }, [username])
-
-  console.log("userProfile", userProfile);
 
   const socialPlatforms = userProfile
     ? [
@@ -69,11 +65,9 @@ export default function AdminPage() {
     ]
     : [];
 
-
   const handleInputChange = (id, value) => {
     setButtonUrls((prev) => ({ ...prev, [id]: value }));
   };
-
 
   const fetchLinks = async () => {
     try {
@@ -140,34 +134,30 @@ export default function AdminPage() {
           data.append("socialUrls", formData2.url);
         }
       } else {
-        // Updating bio & profile image
         data.append("Bio", formData.bio);
         if (formData.avatar) {
           data.append("profileImage", formData.avatar);
         }
       }
 
-      const response = await axiosInstance.put(`/api/auth/signup`, data, {
+      await axiosInstance.put(`/api/auth/signup`, data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       toast.success("Profile updated successfully");
-      fetchProfile(); // Refresh profile data
+      fetchProfile();
 
       if (isUrlUpdate) {
-        setSocialUrls((prevUrls) => [...prevUrls, formData2.url]); // Append new URL to state
-        setFormData2({ url: "" }); // Reset input field
+        setSocialUrls((prevUrls) => [...prevUrls, formData2.url]);
+        setFormData2({ url: "" });
       } else {
-        setIsOpenFiled(false); // Hide input after update
+        setIsOpenFiled(false);
       }
     } catch (error) {
       toast.error("Failed to update profile");
       console.error("Error updating profile:", error);
     }
   };
-
-
-  console.log("savedLinks", savedLinks);
 
   const handleEditLink2 = async (e) => {
     e.preventDefault();
@@ -188,8 +178,7 @@ export default function AdminPage() {
       toast.success("Profile updated successfully");
       fetchProfile();
 
-      // Save link & close input field
-      setSavedLinks({ ...savedLinks, [openSocial]: formData2.url, });
+      setSavedLinks({ ...savedLinks, [openSocial]: formData2.url });
       setOpenSocial(null);
       setFormData2({ url: "" });
     } catch (error) {
@@ -207,7 +196,6 @@ export default function AdminPage() {
     } catch (error) {
       toast.error("Failed to delete link")
     }
-    // 
   }
 
   const handleToggleLinkVisibility = async (id, isVisible) => {
@@ -220,16 +208,9 @@ export default function AdminPage() {
     }
   }
 
-
   const handleProfileAvatorPage = () => {
     router.push("/appearance")
   }
-
-  const handleEditClick = (link) => {
-    // setEditingLink(link);
-    // setUrl(link.url);
-    // setTitle(link.title);
-  };
 
   const copyToClipboard = async () => {
     try {
@@ -269,7 +250,7 @@ export default function AdminPage() {
     } catch (error) {
       console.error("Fetch failed:", error);
     } finally {
-      setLoading(false); // Stop loading after fetch completes
+      setLoading(false);
     }
   };
 
@@ -290,182 +271,186 @@ export default function AdminPage() {
     }
   }, [userProfile]);
 
-
   if (loading) {
     return (
-      <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-100 bg-opacity-50 z-50">
-        <CircularProgress size={60} color="primary" />
+      <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50" style={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%)' }}>
+        <div className="flex flex-col items-center gap-4">
+          <CircularProgress size={48} sx={{ color: '#6366f1' }} />
+          <p className="text-gray-500 font-medium text-sm">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
 
   if (!templates || templates.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-[90%] max-w-lg">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">Go to Template Page, select a template, and come back here</h2>
-          <p className="text-lg text-gray-600 mb-6">You need to select a template to access this page.</p>
-          <div className="flex justify-center gap-6">
-            <Link href="/template" className="bg-gray-600 hover:bg-gray-900 text-white px-6 py-3 rounded-lg shadow-md transition-all">
-              Go
-            </Link>
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%)' }}>
+        <div className="bg-white p-10 rounded-3xl shadow-xl border border-gray-100 text-center w-[90%] max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-200">
+            <QrCode size={32} className="text-white" />
           </div>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Select a Template First</h2>
+          <p className="text-gray-500 mb-8">Choose a template to get started with your profile page.</p>
+          <Link href="/template" className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-8 py-3.5 rounded-xl font-semibold shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            Browse Templates <ArrowRight size={18} />
+          </Link>
         </div>
       </div>
     );
   }
-  return (
-    <div className="flex min-h-screen bg-gray-100">
 
+  return (
+    <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%)' }}>
       <PagesList />
-      <main className="flex-1 p-6">
-        <div className="max-w-5xl mx-auto">
-          {/* Analytics Header */}
-          <div className="bg-black text-white p-4 rounded-md mb-6">
-            <h1 className="text-lg font-medium">Admin</h1>
+
+      <main className="flex-1 p-6 overflow-y-auto">
+        <div className="max-w-3xl mx-auto">
+          {/* Gradient Header */}
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-6 rounded-2xl mb-6 shadow-lg shadow-indigo-200">
+            <p className="text-indigo-100 text-sm font-medium">Dashboard</p>
+            <h1 className="text-2xl font-bold mt-1">Welcome back, {userProfile?.username || "User"} 👋</h1>
           </div>
 
-          {/* User Profile */}
-          <div className="bg-white rounded-md p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="h-20 w-20 bg-black rounded-full flex items-center justify-center text-white overflow-hidden">
+          {/* User Profile Card */}
+          <div className="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-20 rounded-2xl overflow-hidden border-2 border-gray-100 shadow-md cursor-pointer hover:shadow-lg transition-shadow shrink-0" onClick={handleProfileAvatorPage}>
                 <Image
                   src={avatarPreview || "https://thumbs.dreamstime.com/b/vector-illustration-avatar-dummy-logo-collection-image-icon-stock-isolated-object-set-symbol-web-137160339.jpg"}
                   alt="Profile"
                   width={80}
                   height={80}
-                  className="object-cover cursor-pointer"
-                  onClick={handleProfileAvatorPage}
+                  className="object-cover w-full h-full"
                 />
-                {/* <span >{formData.profileName.charAt(0)}</span> */}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="font-medium  text-gray-800 dark:bg-gray-900 dark:text-gray-100">{userProfile?.username || "Loading...."}</h2>
-                  {/* <Edit onClick={handleEditClick} /> */}
-                </div>
-                <p className="text-sm text-gray-600 inline-flex items-center gap-1">
-                  <Edit onClick={() => setIsOpenFiled(true)} />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-gray-900">{userProfile?.username || "Loading..."}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <button onClick={() => setIsOpenFiled(true)} className="text-gray-400 hover:text-indigo-500 transition-colors">
+                    <Edit size={14} />
+                  </button>
                   {isOpenFiled ? (
-                    <form onSubmit={(e) => handleEditLink(e)} className="inline-flex items-center gap-2">
+                    <form onSubmit={(e) => handleEditLink(e)} className="flex items-center gap-2 flex-1">
                       <input
                         type="text"
                         value={formData.bio}
                         onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                        className="border border-gray-300 rounded-md p-1 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 focus:outline-none transition-all"
+                        placeholder="Write your bio..."
                       />
-                      <button type="submit" className="text-blue-600 hover:underline">
-                        Save
+                      <button type="submit" className="text-sm font-semibold text-indigo-500 hover:text-indigo-700">Save</button>
+                      <button type="button" onClick={() => setIsOpenFiled(false)} className="text-gray-400 hover:text-gray-600">
+                        <X size={16} />
                       </button>
                     </form>
                   ) : (
-                    userProfile?.Bio || "Please Write in Bio..."
+                    <p className="text-sm text-gray-500 truncate">{userProfile?.Bio || "Add a bio..."}</p>
                   )}
-                </p>
+                </div>
               </div>
             </div>
           </div>
-          {/* Add Button */}
-          <div className="mb-4">
-            <button
-              className="w-full bg-red-700 text-white py-2 rounded-md flex items-center justify-center"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              <Plus size={18} className="mr-1" /> Add
-            </button>
-          </div>
-          <div className="flex gap-3 mb-2">
+
+          {/* Add Link Button */}
+          <button
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-xl flex items-center justify-center gap-2 font-semibold shadow-md shadow-indigo-200 hover:shadow-lg hover:shadow-indigo-300 transition-all mb-4 hover:scale-[1.01] active:scale-[0.99]"
+            onClick={() => setShowAddForm(!showAddForm)}
+          >
+            <Plus size={20} /> Add New Link
+          </button>
+
+          {/* Social Platform Buttons */}
+          <div className="flex gap-3 mb-4">
             {socialPlatforms.map((platform) => (
               <div key={platform.id} className="relative">
                 <button
                   onClick={() => setOpenSocial(openSocial === platform.id ? null : platform.id)}
-                  className={`w-12 h-12 rounded-full border flex items-center justify-center transition ${openSocial === platform.id ? "bg-gray-800 text-white" : "bg-white border-gray-400  text-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                  className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all duration-200 ${openSocial === platform.id
+                      ? "bg-gradient-to-br from-indigo-500 to-purple-500 border-transparent text-white shadow-md shadow-indigo-200"
+                      : "bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:shadow-md"
                     }`}
                 >
-
-                  <FontAwesomeIcon icon={platform.icon} className="w-6 h-6" />
+                  <FontAwesomeIcon icon={platform.icon} className="w-5 h-5" />
                 </button>
-                {/* Input field opens below selected button */}
-                {openSocial && (
-                  <div className="fixed inset-0 flex items-center justify-center ">
-
-                    <div className="bg-white p-5 rounded-lg shadow-lg w-80">
-                      <div className="flex justify-between items-center border-b pb-2">
-                        <h3 className="text-lg font-semibold">
-                          Edit {socialPlatforms.find((p) => p.id === openSocial)?.name} Link
-                        </h3>
-                        <button onClick={() => setOpenSocial(null)}>
-                          <FontAwesomeIcon icon={faTimes} className="text-gray-600 w-5 h-5" />
-                        </button>
-                      </div>
-
-                      <form onSubmit={handleEditLink2} className="mt-4 space-y-3">
-                        <div className="flex items-center border p-2 rounded-md">
-                          <FontAwesomeIcon
-                            icon={socialPlatforms.find((p) => p.id === openSocial)?.icon}
-                            className="text-gray-700 w-5 h-5"
-                          />
-                          <input
-                            type="text"
-                            value={formData2.url}
-                            onChange={(e) => setFormData2({ url: e.target.value })}
-                            className="flex-1 ml-2 p-2 border border-gray-300 rounded-md focus:border-blue-300 focus:ring-blue-200"
-                            placeholder="Enter URL"
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          className="w-full bg-black text-white py-2 rounded-md hover:bg-blue-700 transition"
-                        >
-                          Update
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
 
+          {/* Social Link Edit Modal */}
+          {openSocial && (
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-2xl shadow-2xl w-96 border border-gray-100">
+                <div className="flex justify-between items-center mb-5">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Edit Social Link
+                  </h3>
+                  <button onClick={() => setOpenSocial(null)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <X size={16} className="text-gray-500" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleEditLink2} className="space-y-4">
+                  <div className="flex items-center border-2 border-gray-200 p-3 rounded-xl focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+                    <FontAwesomeIcon
+                      icon={socialPlatforms.find((p) => p.id === openSocial)?.icon}
+                      className="text-gray-400 w-5 h-5"
+                    />
+                    <input
+                      type="text"
+                      value={formData2.url}
+                      onChange={(e) => setFormData2({ url: e.target.value })}
+                      className="flex-1 ml-3 focus:outline-none text-gray-700 placeholder-gray-400"
+                      placeholder="Paste your URL here"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition-all shadow-md active:scale-[0.99]"
+                  >
+                    Save Link
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* Add Form */}
           {showAddForm && (
-            <div className="bg-white rounded-lg shadow p-6 space-y-4 mb-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4 mb-4">
               <form onSubmit={handleAddLinks} className="space-y-4">
                 <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                    Title
-                  </label>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                   <input
                     id="title"
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2 border  text-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                    placeholder="My Website"
+                    className="w-full rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-gray-700 placeholder-gray-400"
                   />
                 </div>
                 <div>
-                  <label htmlFor="url" className="block text-sm font-medium text-gray-700">
-                    URL
-                  </label>
+                  <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">URL</label>
                   <input
                     id="url"
                     type="text"
                     value={formData.url}
                     onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2 border  text-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                    placeholder="https://example.com"
+                    className="w-full rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-gray-700 placeholder-gray-400"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="bg-black text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300  text-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2.5 px-6 rounded-xl font-semibold hover:opacity-90 transition-all shadow-md"
                   >
                     Save
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowAddForm(false)}
-                    className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition duration-300  text-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                    className="bg-gray-100 text-gray-600 py-2.5 px-6 rounded-xl font-medium hover:bg-gray-200 transition-all"
                   >
                     Cancel
                   </button>
@@ -474,32 +459,19 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Add form of social-media */}
-
-
-          {/* Collection and Archive */}
-          {/* <div className="flex justify-between mb-6">
-            <button className="bg-gray-200 text-black py-2 px-4 rounded-md text-sm mt-2">Add Collection</button>
-            <button className="text-black text-sm flex items-center">
-              View Archive <ArrowRight size={16} className="ml-1" />
-            </button>
-          </div> */}
-
-          {/* Social Platforms */}
-          <div className="space-y-4">
+          {/* Links List */}
+          <div className="space-y-3">
             {links.map((link) => (
-              <div key={link.id} className="bg-white rounded-md p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium  text-gray-800 dark:bg-gray-900 dark:text-gray-100">{link.title}</h3>
-                    {/* <button onClick={() => handleEditClick(link)}>
-                      <Edit size={14} />
-                    </button> */}
+              <div key={link.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center shrink-0">
+                      <ExternalLink size={18} className="text-indigo-500" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 truncate">{link.title}</h3>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {/* <button>
-                      <Download size={16} />
-                    </button> */}
+                  <div className="flex items-center gap-3">
+                    {/* Toggle */}
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
@@ -507,165 +479,142 @@ export default function AdminPage() {
                         checked={link.isVisible}
                         onChange={() => handleToggleLinkVisibility(link._id, link.isVisible)}
                       />
-                      <div className="w-10 h-6 bg-gray-200 peer-checked:bg-gray-600 rounded-full peer">
+                      <div className="w-11 h-6 bg-gray-200 peer-checked:bg-indigo-500 rounded-full transition-colors duration-200">
                         <div
-                          className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-all duration-300 ${link.isVisible ? "translate-x-4" : ""}`}
+                          className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-all duration-200 ${link.isVisible ? "translate-x-5" : ""}`}
                         ></div>
                       </div>
                     </label>
-                    <button className="text-gray-600 hover:text-red-600" onClick={() => handleDeleteLink(link._id)}>
-                      <Trash2 className="h-4 w-4" />
+                    {/* Delete */}
+                    <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100" onClick={() => handleDeleteLink(link._id)}>
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mb-2">URL</p>
-                <div className="bg-gray-200 h-12 rounded-md mb-2 p-3 text-gray-800 dark:bg-gray-900 dark:text-gray-100">{link.url}</div>
-
-                {/* <div className="flex items-center justify-between">
-                  <div className="flex space-x-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                    </svg>
-                  </div>
-                  <span className="text-xs text-gray-500">30 Days</span>
-                </div> */}
+                <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500 truncate border border-gray-100">{link.url}</div>
               </div>
             ))}
           </div>
         </div>
       </main>
 
-
-      <div className="flex flex-col items-center mt-10">
-        {/* Profile URL and QR Code Section */}
-        <div className="flex flex-col items-center gap-4 mb-8">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center gap-4 w-full max-w-sm">
-            <div className="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(profileUrl)}`}
-                alt="Profile QR Code"
-                className="w-32 h-32"
-              />
-            </div>
-
-            <div className="w-full">
-              <div className="flex items-center justify-between bg-green-50 px-4 py-3 rounded-xl mb-3 border border-green-100">
-                <span className="text-sm font-medium text-green-700 truncate mr-2">
-                  {profileUrl}
-                </span>
-                <button
-                  onClick={copyToClipboard}
-                  className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600"
-                  title="Copy link"
-                >
-                  <Copy size={18} />
-                </button>
-              </div>
-
-              <button
-                onClick={async () => {
-                  try {
-                    const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}`);
-                    const blob = await response.json().then(() => { throw new Error("Expected image, got json") }).catch(async () => {
-                      const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}`);
-                      return res.blob();
-                    });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `followus-qr-${username}.png`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    toast.success("QR Code downloaded!");
-                  } catch (error) {
-                    toast.error("Failed to download QR code");
-                  }
-                }}
-                className="w-full bg-black text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg active:scale-95"
-              >
-                <Download size={18} /> Download QR Code
-              </button>
-            </div>
+      {/* Right Panel - QR + Preview */}
+      <div className="w-[380px] p-6 flex flex-col items-center gap-6 border-l border-gray-200 bg-white/50 backdrop-blur-sm overflow-y-auto">
+        {/* QR Code Section */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 w-full">
+          <div className="flex items-center gap-2 mb-4">
+            <QrCode size={20} className="text-indigo-500" />
+            <h3 className="font-semibold text-gray-900">Share Profile</h3>
           </div>
+
+          <div className="bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200 flex items-center justify-center mb-4">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(profileUrl)}`}
+              alt="Profile QR Code"
+              className="w-28 h-28"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 bg-indigo-50 px-3 py-2.5 rounded-xl mb-3 border border-indigo-100">
+            <span className="text-xs font-medium text-indigo-600 truncate flex-1">{profileUrl}</span>
+            <button
+              onClick={copyToClipboard}
+              className="p-1.5 hover:bg-indigo-100 rounded-lg transition-colors text-indigo-500 shrink-0"
+              title="Copy link"
+            >
+              <Copy size={16} />
+            </button>
+          </div>
+
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}`);
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `followus-qr-${username}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                toast.success("QR Code downloaded!");
+              } catch (error) {
+                toast.error("Failed to download QR code");
+              }
+            }}
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md active:scale-[0.98] text-sm"
+          >
+            <Download size={16} /> Download QR Code
+          </button>
         </div>
 
         {/* Mobile Preview */}
-        <aside className="w-96 p-6 flex items-center justify-center">
+        <div className="w-full flex justify-center">
           <div
-            className="relative w-80 h-[700px] border-[12px] border-black rounded-[50px] overflow-hidden bg-white shadow-2xl"
+            className="relative w-[280px] h-[580px] border-[10px] border-gray-900 rounded-[44px] overflow-hidden shadow-2xl"
             style={{ background: templates?.[0]?.bgcolor || '#f3f4f6' }}
           >
-            {/* Notch for the mobile mockup */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-28 h-8 bg-black rounded-b-xl"></div>
+            {/* Notch */}
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-6 bg-gray-900 rounded-b-2xl z-10"></div>
+            {/* Speaker grill */}
+            <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-700 rounded-full z-20"></div>
 
-            <div className="p-6 flex flex-col items-center pt-16">
+            <div className="p-5 flex flex-col items-center pt-12 h-full overflow-y-auto">
               {/* Profile Avatar */}
-              <div className="h-20 w-20 rounded-full overflow-hidden mb-3 border-2 border-gray-300">
+              <div className="h-16 w-16 rounded-full overflow-hidden mb-2 border-2 border-white/30 shadow-lg shrink-0">
                 <Image
                   src={avatarPreview || "https://thumbs.dreamstime.com/b/vector-illustration-avatar-dummy-logo-collection-image-icon-stock-isolated-object-set-symbol-web-137160339.jpg"}
                   alt="Profile"
-                  width={80}
-                  height={80}
-                  className="object-cover"
+                  width={64}
+                  height={64}
+                  className="object-cover w-full h-full"
                 />
               </div>
 
-              <h3 className="font-bold text-gray-100">{userProfile?.username || "Robin Khan"}</h3>
-              <p className="text-sm text-gray-100 mb-5">@{userProfile?.Bio}</p>
+              <h3 className="font-bold text-sm" style={{ color: templates?.[0]?.color || '#fff' }}>{userProfile?.username || "Username"}</h3>
+              <p className="text-xs mb-4 opacity-70" style={{ color: templates?.[0]?.color || '#fff' }}>@{userProfile?.Bio}</p>
 
               {/* Social Buttons */}
-              <div className="mt-5">
-                <div className="flex space-x-3 my-3">
-                  {Object.keys(savedLinks).map((key) => (
-                    savedLinks[key] && (
-                      <a
-                        key={key}
-                        href={savedLinks[key].startsWith('http') ? savedLinks[key] : `https://${savedLinks[key]}`} // Open link in a new tab
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-10 h-10 rounded-full border border-gray-400 flex items-center justify-center hover:bg-gray-400 transition bg-white  text-gray-800 dark:bg-gray-900 dark:text-gray-100"
-                      >
-                        <FontAwesomeIcon icon={socialPlatforms.find((p) => p.id === key)?.icon} size="lg" />
-                      </a>
-                    )
-                  ))}
-                </div>
-                {/* Display Selected URLs */}
+              <div className="flex space-x-2 my-2">
+                {Object.keys(savedLinks).map((key) => (
+                  savedLinks[key] && (
+                    <a
+                      key={key}
+                      href={savedLinks[key].startsWith('http') ? savedLinks[key] : `https://${savedLinks[key]}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/10 transition bg-white/5 text-white"
+                    >
+                      <FontAwesomeIcon icon={socialPlatforms.find((p) => p.id === key)?.icon} className="w-3.5 h-3.5" />
+                    </a>
+                  )
+                ))}
               </div>
 
               {/* Links */}
-              {links?.filter(link => link.isVisible).map((link) => (
-                <a
-                  key={link.id}
-                  href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2 border border-gray-100 text-base mb-3 text-center block hover:bg-gray-400 transition py-2 rounded-full"
-                  style={{
-                    background: templates?.[0]?.bgcolor || '#f3f4f6',
-                    color: templates?.[0]?.color || '#000'
-                  }}
-                >
-                  {link?.title}
-                </a>
-              ))}
-
+              <div className="w-full mt-2 space-y-2">
+                {links?.filter(link => link.isVisible).map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 border border-white/10 text-xs text-center block hover:bg-white/10 transition rounded-full"
+                    style={{
+                      color: templates?.[0]?.color || '#000'
+                    }}
+                  >
+                    {link?.title}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
-        </aside>
+        </div>
       </div>
+
       <DialogModal open={open} setOpen={setOpen} />
     </div>
   )

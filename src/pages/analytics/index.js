@@ -2,9 +2,8 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { LineChart } from '@mui/x-charts/LineChart';
-import Header from '@/components/home/header';
 import PagesList from '@/components/common/pagesList';
-import Footer from '@/components/common/footer';
+import { MousePointerClick, Eye, TrendingUp, ExternalLink } from 'lucide-react';
 
 const Analytics = () => {
   const [linksData, setLinksData] = useState([]);
@@ -18,7 +17,6 @@ const Analytics = () => {
       const data = response.data;
       setLinksData(data);
 
-      // Prepare Graph Data
       const labels = data.map((_, index) => `Link ${index + 1}`);
       const clicks = data.map(link => link.clickCount || 0);
       const views = data.map(link => link.viewCount || 0);
@@ -34,77 +32,119 @@ const Analytics = () => {
 
   const totalClicks = linksData.reduce((sum, link) => sum + (link.clickCount || 0), 0);
   const totalViews = linksData.reduce((sum, link) => sum + (link.viewCount || 0), 0);
+  const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : "0.0";
 
   return (
-  <>
-    <div className="flex bg-gray-100 dark:bg-gray-900 min-h-screen">
-      {/* Sidebar */}
+    <div className="flex min-h-screen" style={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%)' }}>
       <PagesList />
 
-      {/* Main Content */}
-      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-8 text-gray-800 dark:text-white">
-          Analytics Overview
-        </h1>
-
-        {/* Graph */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-lg">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Engagement Overview</h2>
-          <div className="overflow-x-auto">
-            <LineChart
-              xAxis={[{ data: graphData.labels }]}
-              series={[
-                { data: graphData.clicks, label: "Clicks" },
-                { data: graphData.views, label: "Views" },
-              ]}
-              width={1000}
-              height={300}
-            />
+      <div className="flex-1 px-6 py-8 overflow-y-auto">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+            <p className="text-gray-500 mt-1">Track your link performance and engagement</p>
           </div>
-        </div>
 
-        {/* Summary Cards */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-lg shadow-md text-center">
-            <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300">Total Clicks</h3>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{totalClicks}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-lg shadow-md text-center">
-            <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300">Total Views</h3>
-            <p className="text-3xl font-bold text-yellow-500 dark:text-yellow-400">{totalViews}</p>
-          </div>
-        </div>
+          {/* Stat Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {/* Total Clicks */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-bl-[80px]"></div>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center mb-4 shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
+                <MousePointerClick size={22} className="text-white" />
+              </div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Clicks</p>
+              <p className="text-3xl font-bold text-gray-900">{totalClicks.toLocaleString()}</p>
+            </div>
 
-        {/* Links Breakdown */}
-        <div className="mt-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Links Breakdown</h2>
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-            {linksData.map(link => (
-              <li key={link._id} className="py-4">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{link.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  <strong>URL:</strong>{' '}
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    {link.url}
-                  </a>
-                </p>
-                <div className="flex justify-between mt-2 text-sm text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Clicks: {link.clickCount}</span>
-                  <span className="font-medium">Views: {link.viewCount}</span>
+            {/* Total Views */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-bl-[80px]"></div>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-4 shadow-lg shadow-amber-200 group-hover:scale-110 transition-transform">
+                <Eye size={22} className="text-white" />
+              </div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Views</p>
+              <p className="text-3xl font-bold text-gray-900">{totalViews.toLocaleString()}</p>
+            </div>
+
+            {/* CTR */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-bl-[80px]"></div>
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center mb-4 shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform">
+                <TrendingUp size={22} className="text-white" />
+              </div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Click Rate</p>
+              <p className="text-3xl font-bold text-gray-900">{ctr}%</p>
+            </div>
+          </div>
+
+          {/* Chart */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Engagement Overview</h2>
+            <div className="overflow-x-auto">
+              <LineChart
+                xAxis={[{ data: graphData.labels }]}
+                series={[
+                  { data: graphData.clicks, label: "Clicks", color: '#6366f1' },
+                  { data: graphData.views, label: "Views", color: '#f59e0b' },
+                ]}
+                width={800}
+                height={300}
+              />
+            </div>
+          </div>
+
+          {/* Links Breakdown */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">Links Breakdown</h2>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {linksData.map((link, index) => (
+                <div key={link._id} className="px-6 py-4 hover:bg-gray-50/50 transition-colors group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center shrink-0">
+                        <ExternalLink size={16} className="text-indigo-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-gray-900 text-sm">{link.title}</h3>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-indigo-500 hover:underline truncate block"
+                        >
+                          {link.url}
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6 shrink-0">
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-gray-900">{link.clickCount || 0}</p>
+                        <p className="text-xs text-gray-400">clicks</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-gray-900">{link.viewCount || 0}</p>
+                        <p className="text-xs text-gray-400">views</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+              ))}
+              {linksData.length === 0 && (
+                <div className="px-6 py-12 text-center text-gray-400">
+                  <Eye size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">No links yet</p>
+                  <p className="text-sm">Add links to start tracking analytics</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <Footer/>
-  </>
   );
 };
 
