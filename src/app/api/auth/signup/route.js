@@ -101,8 +101,6 @@ export async function POST(req) {
       JSON.stringify({ message: "An error occurred", error: error.message }),
       { status: 500 }
     );
-  } finally {
-    await client.close();
   }
 }
 
@@ -190,7 +188,5 @@ export async function GET(req) {
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
-  } finally {
-    await client.close();
   }
 }
