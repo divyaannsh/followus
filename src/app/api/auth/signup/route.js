@@ -6,18 +6,22 @@ import { v4 as uuidv4 } from 'uuid';
 import { NextResponse } from "next/server";
 
 const uri = process.env.MONGO_URI || "";
-const client = uri ? new MongoClient(uri) : null;
 const dbName = "sociaTreeAuth";
 const collectionName = "sociaTreeAuth01";
 const JWT_SECRET = process.env.JWT_SECRET || "123321";
 
+let cachedClient = null;
+let cachedDb = null;
+
 async function connectToDb() {
-  if (!client) {
-    throw new Error("MongoDB client not initialized. Check MONGO_URI environment variable.");
+  if (cachedClient && cachedDb) {
+    return cachedDb.collection(collectionName);
   }
-  await client.connect();
-  const database = client.db(dbName);
-  return database.collection(collectionName);
+  const client = await MongoClient.connect(uri);
+  const db = client.db(dbName);
+  cachedClient = client;
+  cachedDb = db;
+  return db.collection(collectionName);
 }
 
 const s3Config = {
