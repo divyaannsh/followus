@@ -163,18 +163,36 @@ export default function PublicProfile() {
 
                 {/* Links */}
                 <div className="w-full space-y-3">
-                    {links.map((link) => (
-                        <a
-                            key={link._id}
-                            href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
-                            onClick={(e) => handleLinkClick(link, e)}
-                            rel="noopener noreferrer"
-                            className="w-full py-3 px-6 rounded-full border border-white/25 bg-white/10 hover:bg-white/25 text-center font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] block"
-                            style={{ color: textColor }}
-                        >
-                            {link.title}
-                        </a>
-                    ))}
+                    {links.map((link) => {
+                        let faviconUrl = null;
+                        try {
+                            const domain = new URL(link.url.startsWith("http") ? link.url : `https://${link.url}`).hostname;
+                            faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+                        } catch { /* ignore */ }
+
+                        return (
+                            <a
+                                key={link._id}
+                                href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
+                                onClick={(e) => handleLinkClick(link, e)}
+                                rel="noopener noreferrer"
+                                className="w-full py-3 px-5 rounded-full border border-white/25 bg-white/10 hover:bg-white/25 text-center font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                                style={{ color: textColor }}
+                            >
+                                {faviconUrl && (
+                                    <img
+                                        src={faviconUrl}
+                                        alt=""
+                                        width={16}
+                                        height={16}
+                                        className="rounded-sm shrink-0 opacity-90"
+                                        onError={(e) => { e.target.style.display = "none"; }}
+                                    />
+                                )}
+                                {link.title}
+                            </a>
+                        );
+                    })}
                 </div>
 
                 {/* Footer */}

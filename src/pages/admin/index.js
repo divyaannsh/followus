@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Copy, Edit, Share2, Trash2, Plus, ArrowRight, Download, X, ExternalLink, QrCode } from "lucide-react"
+import { Copy, Edit, Trash2, Plus, ArrowRight, Download, X, ExternalLink, QrCode, GripVertical } from "lucide-react"
 import { useSelector } from "react-redux"
 import axios from "axios"
 import { toast } from "react-toastify"
@@ -19,6 +19,83 @@ import DialogModal from "@/components/common/dialogModal"
 import Link from "next/link"
 import PagesList from "@/components/common/pagesList"
 import { CircularProgress } from "@mui/material"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Favicon helper
+function getFavicon(url) {
+  try {
+    const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+  } catch {
+    return null;
+  }
+}
+
+// Sortable Link Item
+function SortableLinkItem({ link, onToggle, onDelete }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link._id });
+  const favicon = getFavicon(link.url);
+  const [faviconError, setFaviconError] = useState(false);
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group flex items-center gap-3">
+      {/* Drag Handle */}
+      <button {...attributes} {...listeners} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 touch-none">
+        <GripVertical size={18} />
+      </button>
+
+      {/* Favicon */}
+      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center shrink-0 border border-gray-100">
+        {favicon && !faviconError ? (
+          <img src={favicon} alt="" width={18} height={18} onError={() => setFaviconError(true)} className="rounded-sm" />
+        ) : (
+          <ExternalLink size={16} className="text-indigo-500" />
+        )}
+      </div>
+
+      {/* Title + URL */}
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-gray-900 truncate text-sm">{link.title}</h3>
+        <p className="text-xs text-gray-400 truncate">{link.url}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" className="sr-only peer" checked={link.isVisible} onChange={() => onToggle(link._id, link.isVisible)} />
+          <div className="w-11 h-6 bg-gray-200 peer-checked:bg-indigo-500 rounded-full transition-colors duration-200">
+            <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-all duration-200 ${link.isVisible ? "translate-x-5" : ""}`} />
+          </div>
+        </label>
+        <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100" onClick={() => onDelete(link._id)}>
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const router = useRouter()
@@ -46,6 +123,29 @@ export default function AdminPage() {
   const [open, setOpen] = useState(false);
   const [isOpenFiled, setIsOpenFiled] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = links.findIndex((l) => l._id === active.id);
+    const newIndex = links.findIndex((l) => l._id === over.id);
+    const reordered = arrayMove(links, oldIndex, newIndex);
+    setLinks(reordered);
+    try {
+      await axios.post('/api/user/socialLinks/reorder', {
+        username,
+        orderedIds: reordered.map((l) => l._id),
+      });
+    } catch {
+      toast.error('Failed to save link order');
+    }
+  };
 
   useEffect(() => {
     if (!username) return // wait for Redux to hydrate
@@ -462,41 +562,20 @@ export default function AdminPage() {
           )}
 
           {/* Links List */}
-          <div className="space-y-3">
-            {links.map((link) => (
-              <div key={link.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center shrink-0">
-                      <ExternalLink size={18} className="text-indigo-500" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900 truncate">{link.title}</h3>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {/* Toggle */}
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={link.isVisible}
-                        onChange={() => handleToggleLinkVisibility(link._id, link.isVisible)}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-checked:bg-indigo-500 rounded-full transition-colors duration-200">
-                        <div
-                          className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-all duration-200 ${link.isVisible ? "translate-x-5" : ""}`}
-                        ></div>
-                      </div>
-                    </label>
-                    {/* Delete */}
-                    <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100" onClick={() => handleDeleteLink(link._id)}>
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-                <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500 truncate border border-gray-100">{link.url}</div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={links.map((l) => l._id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {links.map((link) => (
+                  <SortableLinkItem
+                    key={link._id}
+                    link={link}
+                    onToggle={handleToggleLinkVisibility}
+                    onDelete={handleDeleteLink}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         </div>
       </main>
 

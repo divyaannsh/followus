@@ -51,7 +51,7 @@ export default function SignupForm() {
       const data = await response.json();
       if (response.ok) {
         toast.success("Account created successfully!");
-        router.push("/login");
+        router.push("/onboarding");
       } else {
         if (data.error === "Username already exists") {
           setErrors((prev) => ({ ...prev, username: "Username already exists" }));
