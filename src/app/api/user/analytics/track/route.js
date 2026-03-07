@@ -16,9 +16,26 @@ async function connectToDb() {
 
 /**
  * Detect traffic source from referrer string or ?ref= query param.
+ * Returns a canonical source name.
  */
 function detectSource(refHeader, refParam) {
-    const ref = (refParam || refHeader || "").toLowerCase();
+    // Check explicit ?ref= / ?utm_source= param first
+    const param = (refParam || "").toLowerCase();
+    if (param) {
+        if (param.includes("instagram")) return "instagram";
+        if (param.includes("facebook") || param.includes("fb")) return "facebook";
+        if (param.includes("twitter") || param.includes("x.com")) return "twitter";
+        if (param.includes("whatsapp") || param.includes("wa")) return "whatsapp";
+        if (param.includes("youtube")) return "youtube";
+        if (param.includes("linkedin")) return "linkedin";
+        if (param.includes("tiktok")) return "tiktok";
+        if (param.includes("snapchat")) return "snapchat";
+        if (param.includes("pinterest")) return "pinterest";
+        return "other"; // unknown explicit ref param
+    }
+
+    // No ref param — use referrer header
+    const ref = (refHeader || "").toLowerCase();
     if (!ref) return "direct";
     if (ref.includes("instagram")) return "instagram";
     if (ref.includes("facebook") || ref.includes("fb.com") || ref.includes("fb.me")) return "facebook";
@@ -29,7 +46,8 @@ function detectSource(refHeader, refParam) {
     if (ref.includes("tiktok")) return "tiktok";
     if (ref.includes("snapchat")) return "snapchat";
     if (ref.includes("pinterest")) return "pinterest";
-    return "other";
+    // Any other referrer (unknown website OR same-origin) = direct
+    return "direct";
 }
 
 /**

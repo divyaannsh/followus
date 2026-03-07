@@ -32,6 +32,15 @@ export default function PublicProfile() {
         const params = new URLSearchParams(window.location.search);
         const refParam = params.get("ref") || params.get("utm_source") || "";
         const refHeader = document.referrer || "";
+
+        // Same-domain referrer (e.g. navigating from /admin) = direct
+        if (!refParam && refHeader) {
+            try {
+                const refHost = new URL(refHeader).hostname;
+                if (refHost === window.location.hostname) return "direct";
+            } catch { /* ignore */ }
+        }
+
         const ref = (refParam + refHeader).toLowerCase();
         if (!ref) return "direct";
         if (ref.includes("instagram")) return "instagram";
@@ -41,6 +50,8 @@ export default function PublicProfile() {
         if (ref.includes("youtube") || ref.includes("youtu.be")) return "youtube";
         if (ref.includes("linkedin")) return "linkedin";
         if (ref.includes("tiktok")) return "tiktok";
+        // Has an external referrer but not a known social = still direct (browser navigation)
+        if (!refParam && refHeader) return "direct";
         return "other";
     };
 
