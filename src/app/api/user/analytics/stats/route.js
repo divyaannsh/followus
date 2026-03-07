@@ -82,6 +82,18 @@ export async function GET(req) {
         }
         const daily = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
 
+        // ── Device Breakdown ──
+        const deviceMap = { android: 0, ios: 0, web: 0 };
+        for (const e of events) {
+            const d = e.device || "web";
+            deviceMap[d] = (deviceMap[d] || 0) + 1;
+        }
+        const deviceBreakdown = [
+            { device: "android", label: "Android", count: deviceMap.android, color: "#3ddc84", emoji: "🤖" },
+            { device: "ios", label: "iOS", count: deviceMap.ios, color: "#007aff", emoji: "🍎" },
+            { device: "web", label: "Web", count: deviceMap.web, color: "#6366f1", emoji: "🖥️" },
+        ].filter(d => d.count > 0);
+
         return NextResponse.json({
             totalViews,
             totalClicks,
@@ -90,6 +102,7 @@ export async function GET(req) {
             topLinks,
             trafficSources,
             daily,
+            deviceBreakdown,
         });
     } catch (err) {
         console.error("Analytics stats error:", err);

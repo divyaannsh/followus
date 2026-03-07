@@ -168,8 +168,8 @@ export default function AnalyticsPage() {
                                 key={opt.value}
                                 onClick={() => { setDays(opt.value); fetchStats(opt.value) }}
                                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${days === opt.value
-                                        ? "bg-indigo-500 text-white shadow-md shadow-indigo-200"
-                                        : "bg-white text-gray-500 border border-gray-200 hover:border-indigo-300"
+                                    ? "bg-indigo-500 text-white shadow-md shadow-indigo-200"
+                                    : "bg-white text-gray-500 border border-gray-200 hover:border-indigo-300"
                                     }`}
                             >
                                 {opt.label}
@@ -257,7 +257,7 @@ export default function AnalyticsPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* ── Traffic Sources ── */}
                                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                                     <h2 className="font-bold text-gray-900 mb-1">Traffic Sources</h2>
@@ -310,6 +310,53 @@ export default function AnalyticsPage() {
                                                     </div>
                                                 )
                                             })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* ── Device Breakdown ── */}
+                                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                                    <h2 className="font-bold text-gray-900 mb-1">Devices</h2>
+                                    <p className="text-gray-400 text-xs mb-4">Android, iOS &amp; Web visitors</p>
+
+                                    {!stats?.deviceBreakdown?.length ? (
+                                        <p className="text-gray-300 text-sm text-center py-8">No device data yet</p>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {stats.deviceBreakdown.map((d) => {
+                                                const total = stats.deviceBreakdown.reduce((a, x) => a + x.count, 0) || 1
+                                                const pct = Math.round((d.count / total) * 100)
+                                                return (
+                                                    <div key={d.device}>
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-lg">{d.emoji}</span>
+                                                                <span className="text-sm font-medium text-gray-700">{d.label}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-sm font-bold text-gray-900">{d.count}</span>
+                                                                <span className="text-xs text-gray-400">{pct}%</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full rounded-full transition-all duration-700"
+                                                                style={{ width: `${pct}%`, backgroundColor: d.color }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                            {/* Donut summary */}
+                                            <div className="mt-4 grid grid-cols-3 gap-2 pt-3 border-t border-gray-50">
+                                                {stats.deviceBreakdown.map((d) => (
+                                                    <div key={d.device} className="flex flex-col items-center gap-1 p-2 rounded-xl" style={{ backgroundColor: `${d.color}15` }}>
+                                                        <span className="text-lg">{d.emoji}</span>
+                                                        <span className="text-xs font-semibold" style={{ color: d.color }}>{d.count}</span>
+                                                        <span className="text-[10px] text-gray-400">{d.label}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>

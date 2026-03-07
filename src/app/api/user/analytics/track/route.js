@@ -2,19 +2,20 @@ import { MongoClient } from "mongodb";
 import { NextResponse } from "next/server";
 
 const uri = process.env.MONGO_URI || "";
-const client = uri ? new MongoClient(uri) : null;
+let cachedClient = null;
+let cachedDb = null;
 
 async function connectToDb() {
-    if (!client) throw new Error("MongoDB client not initialized. Check MONGO_URI.");
-    if (!client.topology || !client.topology.isConnected()) {
-        await client.connect();
-    }
-    return client.db("analytics").collection("events");
+    if (cachedClient && cachedDb) return cachedDb.collection("events");
+    const client = await MongoClient.connect(uri);
+    const db = client.db("analytics");
+    cachedClient = client;
+    cachedDb = db;
+    return db.collection("events");
 }
 
 /**
  * Detect traffic source from referrer string or ?ref= query param.
- * Returns a canonical source name.
  */
 function detectSource(refHeader, refParam) {
     const ref = (refParam || refHeader || "").toLowerCase();
@@ -31,6 +32,17 @@ function detectSource(refHeader, refParam) {
     return "other";
 }
 
+/**
+ * Detect device type from User-Agent header.
+ * Returns "android" | "ios" | "web"
+ */
+function detectDevice(userAgent = "") {
+    const ua = userAgent.toLowerCase();
+    if (ua.includes("android")) return "android";
+    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) return "ios";
+    return "web";
+}
+
 // POST /api/user/analytics/track
 export async function POST(req) {
     try {
@@ -42,7 +54,9 @@ export async function POST(req) {
         }
 
         const refHeader = req.headers.get("referer") || "";
+        const userAgent = req.headers.get("user-agent") || "";
         const source = detectSource(refHeader, refParam);
+        const device = detectDevice(userAgent);
 
         const collection = await connectToDb();
         await collection.insertOne({
@@ -51,6 +65,7 @@ export async function POST(req) {
             linkId: linkId || null,
             linkTitle: linkTitle || null,
             source,
+            device,          // "android" | "ios" | "web"
             timestamp: new Date(),
         });
 

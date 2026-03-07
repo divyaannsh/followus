@@ -88,11 +88,13 @@ export default function PublicProfile() {
         fetchAll();
     }, [username, trackEvent]);
 
-    const handleLinkClick = async (link, e) => {
+    const handleLinkClick = (link, e) => {
         e.preventDefault();
-        await trackEvent("click", link);
         const url = link.url.startsWith("http") ? link.url : `https://${link.url}`;
-        window.open(url, "_blank", "noopener,noreferrer");
+        // Navigate immediately — don't await tracking (popup blockers block window.open after async)
+        window.location.href = url;
+        // Track click in background without blocking navigation
+        trackEvent("click", link);
     };
 
     const handleCopy = (link) => {
