@@ -39,22 +39,19 @@ const Template = () => {
   }, []);
 
   useEffect(() => {
-    if (templates.length > 0 && templates.some((t) => t.displayColor === "#fff")) {
-      const colors = [
-        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)",
-        "linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)",
-        "linear-gradient(120deg, #f6d365 0%, #fda085 100%)",
-        "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
-        "linear-gradient(135deg, #434343 0%, #000000 100%)",
-        "linear-gradient(135deg, #0cebeb 0%, #20e3b2 50%, #29ffc6 100%)",
-      ];
-      const updatedTemplates = templates.map((t, idx) => ({
+    if (templates.length > 0) {
+      // Just ensure displayColor is set to the DB bgcolor (it already should be from fetchTemplates, but this is a safeguard)
+      const updatedTemplates = templates.map((t) => ({
         ...t,
-        displayColor: t.bgcolor || colors[idx % colors.length],
+        displayColor: t.bgcolor || "#1e293b",
       }));
-      setTemplates(updatedTemplates);
-      setStoreTemplates(updatedTemplates);
+
+      // Only update if they differ to avoid infinite loops
+      const needsUpdate = updatedTemplates.some((t, i) => t.displayColor !== templates[i].displayColor);
+      if (needsUpdate) {
+        setTemplates(updatedTemplates);
+        setStoreTemplates(updatedTemplates);
+      }
     }
   }, [templates.length]);
 

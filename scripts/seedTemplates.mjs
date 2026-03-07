@@ -22,7 +22,7 @@ const templates = [
         bio: "Premium fashion for the modern soul. Style is a language — speak fluently.",
         image: "/img/TempImage1.jpeg",
         type: "Fashion",
-        bgcolor: "linear-gradient(135deg, #f953c6 0%, #b91d73 100%)",
+        bgcolor: "#f2f2f2", // Clean minimal grey for fashion
         isSelected: false,
         linksData: [
             { id: "f1", title: "New Arrivals 🆕", url: "#" },
@@ -37,7 +37,7 @@ const templates = [
         bio: "Curated looks. Timeless elegance. Your personal style advisor.",
         image: "/img/TempImage1.jpeg",
         type: "Fashion",
-        bgcolor: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+        bgcolor: "#000000", // Stark black, high fashion Vogue style
         isSelected: false,
         linksData: [
             { id: "vv1", title: "Lookbook 2025", url: "#" },
@@ -53,7 +53,7 @@ const templates = [
         bio: "Transform your body. Elevate your mind. 💪 Free workouts & meal plans.",
         image: "/img/TempImage1.jpeg",
         type: "Health and Fitness",
-        bgcolor: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+        bgcolor: "linear-gradient(135deg, #0ba360 0%, #3cba92 100%)", // Energetic sport green
         isSelected: false,
         linksData: [
             { id: "h1", title: "Free Workout Plan 🏋️", url: "#" },
@@ -68,7 +68,7 @@ const templates = [
         bio: "Yoga • Meditation • Wellness. Reset your body & reconnect with yourself. 🧘",
         image: "/img/TempImage1.jpeg",
         type: "Health and Fitness",
-        bgcolor: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
+        bgcolor: "#e2d2ca", // Calming beige/sand for yoga
         isSelected: false,
         linksData: [
             { id: "mb1", title: "Morning Yoga Flow ☀️", url: "#" },
@@ -84,7 +84,7 @@ const templates = [
         bio: "Content creator • Storyteller • Collaborator. Let's build something great 🎬",
         image: "/img/TempImage1.jpeg",
         type: "Influencer and Creator",
-        bgcolor: "linear-gradient(135deg, #f7971e 0%, #ffd200 100%)",
+        bgcolor: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%)", // Aesthetic pastel pink
         isSelected: false,
         linksData: [
             { id: "c1", title: "Watch Latest Video 🎥", url: "#" },
@@ -99,7 +99,7 @@ const templates = [
         bio: "Sharing real moments, real stories. POV: your new fave creator 🌟",
         image: "/img/TempImage1.jpeg",
         type: "Influencer and Creator",
-        bgcolor: "linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%)",
+        bgcolor: "radial-gradient(circle at top right, #ff0844 0%, #ffb199 100%)", // Vibrant trendy creator
         isSelected: false,
         linksData: [
             { id: "rl1", title: "Subscribe on YouTube", url: "#" },
@@ -115,7 +115,7 @@ const templates = [
         bio: "Data-driven marketing for ambitious brands. Scale faster, smarter. 📈",
         image: "/img/TempImage1.jpeg",
         type: "Marketing",
-        bgcolor: "linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
+        bgcolor: "#1e293b", // Professional slate tone
         isSelected: false,
         linksData: [
             { id: "m1", title: "Free Marketing Audit", url: "#" },
@@ -130,7 +130,7 @@ const templates = [
         bio: "Social media • SEO • Ads. We turn clicks into customers. 🚀",
         image: "/img/TempImage1.jpeg",
         type: "Marketing",
-        bgcolor: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+        bgcolor: "linear-gradient(to right, #4facfe 0%, #00f2fe 100%)", // Tech/Corporate blue
         isSelected: false,
         linksData: [
             { id: "bb1", title: "Get a Free Quote", url: "#" },
@@ -146,7 +146,7 @@ const templates = [
         bio: "Artisan coffee roasted with love. Visit us or order online ☕",
         image: "/img/TempImage1.jpeg",
         type: "Small Business",
-        bgcolor: "linear-gradient(135deg, #6f4e37 0%, #c8a97e 100%)",
+        bgcolor: "#f3e5ab", // Warm inviting vanilla/coffee hue
         isSelected: false,
         linksData: [
             { id: "sb1", title: "Order Online ☕", url: "#" },
@@ -161,7 +161,7 @@ const templates = [
         bio: "Fresh flowers for every occasion. Same-day delivery available 🌸",
         image: "/img/TempImage1.jpeg",
         type: "Small Business",
-        bgcolor: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
+        bgcolor: "linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%)", // Fresh organic green
         isSelected: false,
         linksData: [
             { id: "bp1", title: "Shop Bouquets 💐", url: "#" },
@@ -177,7 +177,7 @@ const templates = [
         bio: "Indie artist. New EP out now 🎧 Catch me on tour this summer.",
         image: "/img/TempImage1.jpeg",
         type: "Music",
-        bgcolor: "linear-gradient(135deg, #141e30 0%, #243b55 100%)",
+        bgcolor: "radial-gradient(circle at center, #141e30 0%, #000000 100%)", // Deep concert black/blue
         isSelected: false,
         linksData: [
             { id: "mu1", title: "🎵 Stream New EP", url: "#" },
@@ -192,7 +192,7 @@ const templates = [
         bio: "Producer • Beats • Collabs. Your sound starts here 🎹",
         image: "/img/TempImage1.jpeg",
         type: "Music",
-        bgcolor: "linear-gradient(135deg, #ff6a00 0%, #ee0979 100%)",
+        bgcolor: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", // Electronic / EDM neon
         isSelected: false,
         linksData: [
             { id: "bf1", title: "Beat Store 🔥", url: "#" },
@@ -208,7 +208,7 @@ const templates = [
         bio: "Social media tips, tricks & trends. Follow for daily content inspo 📲",
         image: "/img/TempImage1.jpeg",
         type: "Social Media",
-        bgcolor: "linear-gradient(135deg, #4776e6 0%, #8e54e9 100%)",
+        bgcolor: "linear-gradient(to right, #fa709a 0%, #fee140 100%)", // Warm sunset Instagram vibe
         isSelected: false,
         linksData: [
             { id: "sm1", title: "Instagram Growth Guide 📈", url: "#" },
@@ -223,7 +223,7 @@ const templates = [
         bio: "Helping brands go viral since 2022. Strategy • Content • Growth 🔥",
         image: "/img/TempImage1.jpeg",
         type: "Social Media",
-        bgcolor: "linear-gradient(135deg, #1d976c 0%, #93f9b9 100%)",
+        bgcolor: "linear-gradient(to top, #30cfd0 0%, #330867 100%)", // TikTok inspired deep contrast
         isSelected: false,
         linksData: [
             { id: "vv1", title: "Viral Reels Strategy 🎬", url: "#" },
