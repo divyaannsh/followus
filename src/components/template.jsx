@@ -256,18 +256,13 @@ const Template = () => {
                       {itm.linksData.slice(0, 5).map((link) => (
                         <Box
                           key={link.id}
-                          component="a"
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
                           sx={{ display: "block", textDecoration: "none", borderRadius: "12px", backgroundColor: "rgba(255,255,255,0.95)", py: 1.5, px: 2, textAlign: "center", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", transition: "all 0.2s", "&:hover": { transform: "scale(1.02)", backgroundColor: "#fff" } }}
                         >
                           <Typography sx={{ color: "#111827", fontSize: "14px", fontWeight: 700 }}>{link.title}</Typography>
                         </Box>
                       ))}
                     </Box>
-                    <Box className="flex justify-center gap-5 mt-auto pt-6 pb-2" onClick={(e) => e.stopPropagation()}>
+                    <Box className="flex justify-center gap-5 mt-auto pt-6 pb-2">
                       <Box sx={{ backgroundColor: "rgba(255,255,255,0.2)", p: 1, borderRadius: "50%", display: "flex", cursor: "pointer" }}>
                         <InstagramIcon sx={{ color: "white", fontSize: 24 }} />
                       </Box>
