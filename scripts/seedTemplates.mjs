@@ -240,6 +240,8 @@ async function seed() {
         const db = client.db("templates");
         const col = db.collection("template01");
 
+        console.log(`\n🧹  Clearing existing templates...`);
+        await col.deleteMany({});
         console.log(`\n🌱  Inserting ${templates.length} new templates...\n`);
 
         let inserted = 0;
