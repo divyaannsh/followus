@@ -83,6 +83,17 @@ function SortableLinkItem({ link, onToggle, onDelete }) {
 
       {/* Actions */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Go to Link */}
+        <a
+          href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100"
+          title="Go to link"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExternalLink size={15} />
+        </a>
         <label className="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" className="sr-only peer" checked={link.isVisible} onChange={() => onToggle(link._id, link.isVisible)} />
           <div className="w-11 h-6 bg-gray-200 peer-checked:bg-indigo-500 rounded-full transition-colors duration-200">
