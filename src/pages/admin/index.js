@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Copy, Edit, Trash2, Plus, ArrowRight, Download, X, ExternalLink, QrCode, GripVertical } from "lucide-react"
+import { Copy, Edit, Trash2, Plus, ArrowRight, Download, X, ExternalLink, QrCode, GripVertical, Pin, Play, Music, Clock } from "lucide-react"
 import { useSelector } from "react-redux"
 import axios from "axios"
 import { toast } from "react-toastify"
@@ -47,9 +47,9 @@ function getFavicon(url) {
 }
 
 // Sortable Link Item
-function SortableLinkItem({ link, onToggle, onDelete }) {
+function SortableLinkItem({ link, onToggle, onDelete, onPin }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link._id });
-  const favicon = getFavicon(link.url);
+  const favicon = link.type === 'link' || !link.type ? getFavicon(link.url) : null;
   const [faviconError, setFaviconError] = useState(false);
 
   const style = {
@@ -59,51 +59,104 @@ function SortableLinkItem({ link, onToggle, onDelete }) {
     zIndex: isDragging ? 50 : 'auto',
   };
 
+  // Schedule status badge
+  const now = new Date();
+  const scheduled = link.scheduledAt ? new Date(link.scheduledAt) : null;
+  const expires = link.expiresAt ? new Date(link.expiresAt) : null;
+  const isNotYetActive = scheduled && scheduled > now;
+  const isExpired = expires && expires < now;
+
+  const TYPE_ICON = { youtube: <Play size={14} className="text-red-500" />, spotify: <Music size={14} className="text-green-500" /> };
+  const ANIM_COLORS = { bounce: 'bg-blue-50 text-blue-600', pulse: 'bg-purple-50 text-purple-600', shake: 'bg-orange-50 text-orange-600', glow: 'bg-yellow-50 text-yellow-600' };
+
   return (
-    <div ref={setNodeRef} style={style} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group flex items-center gap-3">
-      {/* Drag Handle */}
-      <button {...attributes} {...listeners} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 touch-none">
-        <GripVertical size={18} />
-      </button>
-
-      {/* Favicon */}
-      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center shrink-0 border border-gray-100">
-        {favicon && !faviconError ? (
-          <img src={favicon} alt="" width={18} height={18} onError={() => setFaviconError(true)} className="rounded-sm" />
-        ) : (
-          <ExternalLink size={16} className="text-indigo-500" />
-        )}
-      </div>
-
-      {/* Title + URL */}
-      <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-gray-900 truncate text-sm">{link.title}</h3>
-        <p className="text-xs text-gray-400 truncate">{link.url}</p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2 shrink-0">
-        {/* Go to Link */}
-        <a
-          href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100"
-          title="Go to link"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <ExternalLink size={15} />
-        </a>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" className="sr-only peer" checked={link.isVisible} onChange={() => onToggle(link._id, link.isVisible)} />
-          <div className="w-11 h-6 bg-gray-200 peer-checked:bg-indigo-500 rounded-full transition-colors duration-200">
-            <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-all duration-200 ${link.isVisible ? "translate-x-5" : ""}`} />
-          </div>
-        </label>
-        <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100" onClick={() => onDelete(link._id)}>
-          <Trash2 size={16} />
+    <div ref={setNodeRef} style={style} className={`bg-white rounded-2xl p-4 shadow-sm border transition-all duration-200 group flex flex-col gap-2 ${link.isPinned ? 'border-yellow-300 bg-yellow-50/30' : 'border-gray-100 hover:shadow-md'}`}>
+      <div className="flex items-center gap-3">
+        {/* Drag Handle */}
+        <button {...attributes} {...listeners} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 touch-none">
+          <GripVertical size={18} />
         </button>
+
+        {/* Icon */}
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center shrink-0 border border-gray-100">
+          {link.type === 'youtube' ? (
+            <Play size={16} className="text-red-500 fill-red-500" />
+          ) : link.type === 'spotify' ? (
+            <Music size={16} className="text-green-500" />
+          ) : favicon && !faviconError ? (
+            <img src={favicon} alt="" width={18} height={18} onError={() => setFaviconError(true)} className="rounded-sm" />
+          ) : (
+            <ExternalLink size={16} className="text-indigo-500" />
+          )}
+        </div>
+
+        {/* Title + URL */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            {link.isPinned && <span className="text-yellow-500 shrink-0">📌</span>}
+            <h3 className="font-semibold text-gray-900 truncate text-sm">{link.title}</h3>
+          </div>
+          <p className="text-xs text-gray-400 truncate">{link.url}</p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Pin toggle */}
+          <button
+            onClick={() => onPin(link._id, link.isPinned)}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 ${link.isPinned ? 'text-yellow-500 bg-yellow-50' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`}
+            title={link.isPinned ? 'Unpin' : 'Pin to top'}
+          >
+            <Pin size={15} />
+          </button>
+          {/* Go to Link */}
+          <a
+            href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100"
+            title="Go to link"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink size={15} />
+          </a>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" className="sr-only peer" checked={link.isVisible} onChange={() => onToggle(link._id, link.isVisible)} />
+            <div className="w-11 h-6 bg-gray-200 peer-checked:bg-indigo-500 rounded-full transition-colors duration-200">
+              <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow-sm transition-all duration-200 ${link.isVisible ? "translate-x-5" : ""}`} />
+            </div>
+          </label>
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100" onClick={() => onDelete(link._id)}>
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
+
+      {/* Badges row */}
+      {(link.animation && link.animation !== 'none') || isNotYetActive || isExpired || link.type !== 'link' ? (
+        <div className="flex flex-wrap gap-1.5 ml-9 pb-1">
+          {link.type && link.type !== 'link' && (
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${link.type === 'youtube' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+              {link.type === 'youtube' ? '▶ YouTube' : '🎵 Spotify'}
+            </span>
+          )}
+          {link.animation && link.animation !== 'none' && (
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${ANIM_COLORS[link.animation] || 'bg-gray-100 text-gray-500'}`}>
+              ✨ {link.animation}
+            </span>
+          )}
+          {isNotYetActive && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 flex items-center gap-1">
+              <Clock size={9} /> Scheduled {new Date(link.scheduledAt).toLocaleDateString()}
+            </span>
+          )}
+          {isExpired && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-500">
+              ⌛ Expired
+            </span>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -125,6 +178,10 @@ export default function AdminPage() {
     profileImage: null,
     bio: "",
     avatar: null,
+    linkType: "link",
+    animation: "none",
+    scheduledAt: "",
+    expiresAt: "",
   })
 
   const username = useSelector((state) => state.auth.user)
@@ -184,10 +241,21 @@ export default function AdminPage() {
   const fetchLinks = async () => {
     if (!username) return
     try {
-      const response = await axios.get(`/api/user/socialLinks?username=${username}`)
+      // Use ?admin=1 so scheduled/expired links still appear in admin dashboard
+      const response = await axios.get(`/api/user/socialLinks?username=${username}&admin=1`)
       setLinks(Array.isArray(response.data) ? response.data : [])
     } catch (error) {
       console.error("fetchLinks error:", error)
+    }
+  };
+
+  const handlePinLink = async (id, currentlyPinned) => {
+    try {
+      await axios.patch('/api/user/socialLinks/pin', { id, isPinned: !currentlyPinned });
+      setLinks(links.map((l) => l._id === id ? { ...l, isPinned: !currentlyPinned } : l));
+      toast.success(currentlyPinned ? 'Link unpinned' : 'Link pinned to top!');
+    } catch {
+      toast.error('Failed to update pin');
     }
   };
 
@@ -220,16 +288,19 @@ export default function AdminPage() {
   const handleAddLinks = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post("/api/user/socialLinks", {
+      await axios.post("/api/user/socialLinks", {
         url: formData.url,
         title: formData.title,
         username: username,
-        isVisible: "false"
+        isVisible: false,
+        type: formData.linkType || 'link',
+        animation: formData.animation || 'none',
+        scheduledAt: formData.scheduledAt || null,
+        expiresAt: formData.expiresAt || null,
       })
-      setLinks([...links, response.data])
       toast.success("Link added successfully")
       setShowAddForm(false)
-      setFormData({ ...formData, url: "", title: "" })
+      setFormData({ ...formData, url: '', title: '', linkType: 'link', animation: 'none', scheduledAt: '', expiresAt: '' })
       fetchLinks()
     } catch (error) {
       toast.error("Failed to add link")
@@ -531,6 +602,28 @@ export default function AdminPage() {
           {showAddForm && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4 mb-4">
               <form onSubmit={handleAddLinks} className="space-y-4">
+
+                {/* Type selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: 'link', label: '🔗 Link' },
+                      { value: 'youtube', label: '▶ YouTube' },
+                      { value: 'spotify', label: '🎵 Spotify' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, linkType: opt.value })}
+                        className={`px-3 py-1.5 rounded-xl text-sm font-medium border-2 transition-all ${formData.linkType === opt.value ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                   <input
@@ -538,22 +631,71 @@ export default function AdminPage() {
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="My Website"
+                    placeholder={formData.linkType === 'youtube' ? 'My YouTube Video' : formData.linkType === 'spotify' ? 'My Spotify Track' : 'My Website'}
                     className="w-full rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-gray-700 placeholder-gray-400"
                   />
                 </div>
                 <div>
-                  <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                  <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">
+                    {formData.linkType === 'youtube' ? 'YouTube URL' : formData.linkType === 'spotify' ? 'Spotify URL' : 'URL'}
+                  </label>
                   <input
                     id="url"
                     type="text"
                     value={formData.url}
                     onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                    placeholder="https://example.com"
+                    placeholder={formData.linkType === 'youtube' ? 'https://youtube.com/watch?v=...' : formData.linkType === 'spotify' ? 'https://open.spotify.com/track/...' : 'https://example.com'}
                     className="w-full rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-gray-700 placeholder-gray-400"
                   />
                 </div>
-                <div className="flex gap-3">
+
+                {/* Animation picker */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Button Animation</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['none', 'bounce', 'pulse', 'shake', 'glow'].map((anim) => (
+                      <button
+                        key={anim}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, animation: anim })}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium border-2 transition-all capitalize ${formData.animation === anim ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                      >
+                        {anim === 'none' ? '— None' : anim === 'bounce' ? '⬆ Bounce' : anim === 'pulse' ? '💫 Pulse' : anim === 'shake' ? '〰 Shake' : '✨ Glow'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Scheduling (optional) */}
+                <details className="group">
+                  <summary className="text-sm font-medium text-gray-500 cursor-pointer hover:text-indigo-600 list-none flex items-center gap-1.5">
+                    <Clock size={14} />
+                    <span>Schedule (optional)</span>
+                    <span className="text-xs text-gray-400 ml-auto group-open:hidden">▸ expand</span>
+                  </summary>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Show from</label>
+                      <input
+                        type="datetime-local"
+                        value={formData.scheduledAt}
+                        onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+                        className="w-full rounded-xl border-2 border-gray-200 p-2.5 text-sm focus:border-indigo-400 focus:outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Hide after</label>
+                      <input
+                        type="datetime-local"
+                        value={formData.expiresAt}
+                        onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
+                        className="w-full rounded-xl border-2 border-gray-200 p-2.5 text-sm focus:border-indigo-400 focus:outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                </details>
+
+                <div className="flex gap-3 pt-1">
                   <button
                     type="submit"
                     className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2.5 px-6 rounded-xl font-semibold hover:opacity-90 transition-all shadow-md"
@@ -582,6 +724,7 @@ export default function AdminPage() {
                     link={link}
                     onToggle={handleToggleLinkVisibility}
                     onDelete={handleDeleteLink}
+                    onPin={handlePinLink}
                   />
                 ))}
               </div>

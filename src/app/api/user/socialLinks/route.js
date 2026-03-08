@@ -17,7 +17,7 @@ async function connectToDb() {
 export async function POST(req) {
     try {
         const body = await req.json();
-        const { url, username, title, isVisible } = body;
+        const { url, username, title, isVisible, scheduledAt, expiresAt, animation, type } = body;
 
         if (!url || !username || !title) {
             return new NextResponse("URL and Username are required", { status: 400 });
@@ -29,7 +29,20 @@ export async function POST(req) {
         const maxDoc = await collection.findOne({ username }, { sort: { order: -1 } });
         const nextOrder = maxDoc?.order != null ? maxDoc.order + 1 : 0;
 
-        const result = await collection.insertOne({ url, username, title, isVisible, clickCount: 0, viewCount: 0, order: nextOrder });
+        const result = await collection.insertOne({
+            url,
+            username,
+            title,
+            isVisible,
+            clickCount: 0,
+            viewCount: 0,
+            order: nextOrder,
+            isPinned: false,
+            scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+            expiresAt: expiresAt ? new Date(expiresAt) : null,
+            animation: animation || "none",
+            type: type || "link",
+        });
 
         return NextResponse.json(
             { message: "Data added successfully!", data: result, status: 200 },
@@ -71,14 +84,39 @@ export async function GET(req) {
     try {
         const { searchParams } = new URL(req.url);
         const username = searchParams.get("username");
+        const isAdmin = searchParams.get("admin") === "1";
 
         if (!username) {
             return NextResponse.json({ message: "Username is required" }, { status: 400 });
         }
 
         const collection = await connectToDb();
-        // Sort by order field so DnD order persists across page loads
-        const data = await collection.find({ username }).sort({ order: 1 }).toArray();
+        // Sort: pinned first, then by order
+        let query = { username };
+
+        // If not admin (public profile), filter by schedule window
+        if (!isAdmin) {
+            const now = new Date();
+            query = {
+                username,
+                $or: [
+                    { scheduledAt: null },
+                    { scheduledAt: { $exists: false } },
+                    { scheduledAt: { $lte: now } },
+                ],
+                $and: [
+                    {
+                        $or: [
+                            { expiresAt: null },
+                            { expiresAt: { $exists: false } },
+                            { expiresAt: { $gte: now } },
+                        ]
+                    }
+                ]
+            };
+        }
+
+        const data = await collection.find(query).sort({ isPinned: -1, order: 1 }).toArray();
 
         return NextResponse.json(data);
     } catch (error) {

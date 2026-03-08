@@ -4,6 +4,7 @@ import axios from "axios";
 import Image from "next/image";
 import { faInstagram, faFacebook, faXTwitter, faYoutube, faWhatsapp, faLinkedin, faTiktok } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { YouTubeEmbed, SpotifyEmbed } from "@/components/common/EmbedBlock";
 
 const SOCIAL_ICONS = {
     Instalink: faInstagram,
@@ -13,6 +14,14 @@ const SOCIAL_ICONS = {
     whatsapp: faWhatsapp,
     linkedin: faLinkedin,
     tiktok: faTiktok,
+};
+
+// Map animation name → CSS class
+const ANIM_CLASS = {
+    bounce: "anim-bounce",
+    pulse: "anim-pulse",
+    shake: "anim-shake",
+    glow: "anim-glow",
 };
 
 export default function PublicProfile() {
@@ -25,6 +34,12 @@ export default function PublicProfile() {
     const [notFound, setNotFound] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
     const [copiedId, setCopiedId] = useState(null);
+    const [profileCopied, setProfileCopied] = useState(false);
+    const [shareSupported, setShareSupported] = useState(false);
+
+    useEffect(() => {
+        setShareSupported(typeof navigator !== "undefined" && !!navigator.share);
+    }, []);
 
     // Detect referrer source from URL ?ref= param or document.referrer
     const getSource = () => {
@@ -115,6 +130,24 @@ export default function PublicProfile() {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const handleCopyProfile = () => {
+        if (typeof window === "undefined") return;
+        navigator.clipboard.writeText(window.location.href).catch(() => { });
+        setProfileCopied(true);
+        setTimeout(() => setProfileCopied(false), 2000);
+    };
+
+    const handleShareProfile = async () => {
+        const url = typeof window !== "undefined" ? window.location.href : "";
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: `@${profile?.username}`, url });
+            } catch { /* cancelled */ }
+        } else {
+            handleCopyProfile();
+        }
+    };
+
     const socialKeys = ["Instalink", "Fblink", "Twitlink", "youtube", "whatsapp", "linkedin"];
 
     if (loading) {
@@ -142,130 +175,201 @@ export default function PublicProfile() {
         "https://thumbs.dreamstime.com/b/vector-illustration-avatar-dummy-logo-collection-image-icon-stock-isolated-object-set-symbol-web-137160339.jpg";
 
     return (
-        <div
-            className="min-h-screen flex flex-col items-center py-12 px-4 relative"
-            style={{ background: bg }}
-        >
-            {/* Dark/Light Mode Toggle */}
-            <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-lg transition-all border border-white/20 backdrop-blur-sm"
-                title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+        <>
+            {/* Animation CSS */}
+            <style>{`
+                @keyframes fuBounce {
+                    0%, 100% { transform: translateY(0); }
+                    25% { transform: translateY(-6px); }
+                    75% { transform: translateY(-3px); }
+                }
+                @keyframes fuPulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.04); opacity: 0.9; }
+                }
+                @keyframes fuShake {
+                    0%, 100% { transform: translateX(0); }
+                    20% { transform: translateX(-4px); }
+                    40% { transform: translateX(4px); }
+                    60% { transform: translateX(-4px); }
+                    80% { transform: translateX(4px); }
+                }
+                @keyframes fuGlow {
+                    0%, 100% { box-shadow: 0 0 0px rgba(255,255,255,0.3); }
+                    50% { box-shadow: 0 0 18px rgba(255,255,255,0.7); }
+                }
+                .anim-bounce { animation: fuBounce 1.4s ease-in-out infinite; }
+                .anim-pulse  { animation: fuPulse 2s ease-in-out infinite; }
+                .anim-shake  { animation: fuShake 1.5s ease-in-out infinite; }
+                .anim-glow   { animation: fuGlow 2s ease-in-out infinite; }
+            `}</style>
+
+            <div
+                className="min-h-screen flex flex-col items-center py-12 px-4 relative"
+                style={{ background: bg }}
             >
-                {darkMode ? "☀️" : "🌙"}
-            </button>
+                {/* Dark/Light Mode Toggle */}
+                <button
+                    onClick={() => setDarkMode(!darkMode)}
+                    className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-lg transition-all border border-white/20 backdrop-blur-sm"
+                    title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                    {darkMode ? "☀️" : "🌙"}
+                </button>
 
-            <div className="w-full max-w-sm flex flex-col items-center gap-5">
-                {/* Avatar */}
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl">
-                    <Image src={avatar} alt={profile?.username || "Avatar"} width={96} height={96} className="object-cover w-full h-full" />
-                </div>
+                <div className="w-full max-w-sm flex flex-col items-center gap-5">
+                    {/* Avatar */}
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl">
+                        <Image src={avatar} alt={profile?.username || "Avatar"} width={96} height={96} className="object-cover w-full h-full" />
+                    </div>
 
-                {/* Name & Bio */}
-                <div className="text-center">
-                    <h1 className="text-xl font-bold" style={{ color: textColor }}>
-                        @{profile?.username}
-                    </h1>
-                    {profile?.Bio && (
-                        <p className="text-sm mt-1 opacity-80" style={{ color: textColor }}>
-                            {profile.Bio}
-                        </p>
-                    )}
-                </div>
+                    {/* Name, Verified Badge & Bio */}
+                    <div className="text-center">
+                        <h1 className="text-xl font-bold flex items-center justify-center gap-1.5" style={{ color: textColor }}>
+                            @{profile?.username}
+                            {profile?.isVerified && (
+                                <span
+                                    title="Verified"
+                                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold shadow-md"
+                                >
+                                    ✓
+                                </span>
+                            )}
+                        </h1>
+                        {profile?.Bio && (
+                            <p className="text-sm mt-1 opacity-80" style={{ color: textColor }}>
+                                {profile.Bio}
+                            </p>
+                        )}
 
-                {/* Social Icons */}
-                <div className="flex gap-3">
-                    {socialKeys.map((key) => {
-                        const url = key === "whatsapp"
-                            ? (profile?.whatsAppLink ? `https://wa.me/${profile.whatsAppLink}` : null)
-                            : profile?.[key];
-                        if (!url || !SOCIAL_ICONS[key]) return null;
-                        return (
-                            <a
-                                key={key}
-                                href={url.startsWith("http") ? url : `https://${url}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-9 h-9 rounded-full border border-white/20 bg-white/10 flex items-center justify-center hover:bg-white/25 transition-all"
-                            >
-                                <FontAwesomeIcon icon={SOCIAL_ICONS[key]} className="w-4 h-4" style={{ color: textColor }} />
-                            </a>
-                        );
-                    })}
-                </div>
+                        {/* Share / Copy Profile Button */}
+                        <button
+                            onClick={handleShareProfile}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-medium transition-all"
+                            style={{ color: textColor }}
+                        >
+                            {profileCopied ? "✓ Copied!" : (shareSupported ? "🔗 Share" : "🔗 Copy Link")}
+                        </button>
+                    </div>
 
-                {/* Links */}
-                <div className="w-full space-y-3">
-                    {links.map((link) => {
-                        let faviconUrl = null;
-                        try {
-                            const domain = new URL(link.url.startsWith("http") ? link.url : `https://${link.url}`).hostname;
-                            faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-                        } catch { /* ignore */ }
-
-                        const isCopied = copiedId === link._id;
-
-                        return (
-                            <div key={link._id} className="relative group">
+                    {/* Social Icons */}
+                    <div className="flex gap-3">
+                        {socialKeys.map((key) => {
+                            const url = key === "whatsapp"
+                                ? (profile?.whatsAppLink ? `https://wa.me/${profile.whatsAppLink}` : null)
+                                : profile?.[key];
+                            if (!url || !SOCIAL_ICONS[key]) return null;
+                            return (
                                 <a
-                                    href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
-                                    onClick={(e) => handleLinkClick(link, e)}
+                                    key={key}
+                                    href={url.startsWith("http") ? url : `https://${url}`}
+                                    target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-full py-3 px-5 rounded-full border border-white/25 bg-white/10 hover:bg-white/25 text-center font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 hover:shadow-lg"
-                                    style={{ color: textColor }}
+                                    className="w-9 h-9 rounded-full border border-white/20 bg-white/10 flex items-center justify-center hover:bg-white/25 transition-all"
                                 >
-                                    {faviconUrl && (
-                                        <img
-                                            src={faviconUrl}
-                                            alt=""
-                                            width={16}
-                                            height={16}
-                                            className="rounded-sm shrink-0 opacity-90"
-                                            onError={(e) => { e.target.style.display = "none"; }}
-                                        />
-                                    )}
-                                    {link.title}
+                                    <FontAwesomeIcon icon={SOCIAL_ICONS[key]} className="w-4 h-4" style={{ color: textColor }} />
                                 </a>
-                                {/* Copy to clipboard button */}
-                                <button
-                                    onClick={() => handleCopy(link)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-xs transition-all opacity-0 group-hover:opacity-100"
-                                    title="Copy link"
-                                    style={{ color: textColor }}
-                                >
-                                    {isCopied ? "✓" : "⎘"}
-                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Links */}
+                    <div className="w-full space-y-3">
+                        {links.map((link) => {
+                            // Embedded types
+                            if (link.type === "youtube") {
+                                return (
+                                    <div key={link._id} className={ANIM_CLASS[link.animation] || ""}>
+                                        <YouTubeEmbed url={link.url} title={link.title} textColor={textColor} />
+                                    </div>
+                                );
+                            }
+                            if (link.type === "spotify") {
+                                return (
+                                    <div key={link._id} className={ANIM_CLASS[link.animation] || ""}>
+                                        <SpotifyEmbed url={link.url} title={link.title} textColor={textColor} />
+                                    </div>
+                                );
+                            }
+
+                            // Standard link
+                            let faviconUrl = null;
+                            try {
+                                const domain = new URL(link.url.startsWith("http") ? link.url : `https://${link.url}`).hostname;
+                                faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+                            } catch { /* ignore */ }
+
+                            const isCopied = copiedId === link._id;
+                            const animClass = ANIM_CLASS[link.animation] || "";
+
+                            return (
+                                <div key={link._id} className="relative group">
+                                    {/* Pinned badge */}
+                                    {link.isPinned && (
+                                        <span className="absolute -top-2 left-4 text-[10px] bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full z-10">
+                                            📌 Pinned
+                                        </span>
+                                    )}
+                                    <a
+                                        href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
+                                        onClick={(e) => handleLinkClick(link, e)}
+                                        rel="noopener noreferrer"
+                                        className={`w-full py-3 px-5 rounded-full border border-white/25 bg-white/10 hover:bg-white/25 text-center font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 hover:shadow-lg ${animClass}`}
+                                        style={{ color: textColor }}
+                                    >
+                                        {faviconUrl && (
+                                            <img
+                                                src={faviconUrl}
+                                                alt=""
+                                                width={16}
+                                                height={16}
+                                                className="rounded-sm shrink-0 opacity-90"
+                                                onError={(e) => { e.target.style.display = "none"; }}
+                                            />
+                                        )}
+                                        {link.title}
+                                    </a>
+                                    {/* Copy to clipboard button */}
+                                    <button
+                                        onClick={() => handleCopy(link)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-xs transition-all opacity-0 group-hover:opacity-100 sm:opacity-100"
+                                        title="Copy link"
+                                        style={{ color: textColor }}
+                                    >
+                                        {isCopied ? "✓" : "⎘"}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Ad Banner */}
+                    <div className="w-full mt-4 rounded-2xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-sm">
+                        <a
+                            href="https://followus.link/signup"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-all"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                                fu
                             </div>
-                        );
-                    })}
-                </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold" style={{ color: textColor }}>Create your free page</p>
+                                <p className="text-xs opacity-60 truncate" style={{ color: textColor }}>followus.link — Join thousands of creators</p>
+                            </div>
+                            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-white/20 shrink-0" style={{ color: textColor }}>
+                                Free →
+                            </span>
+                        </a>
+                    </div>
 
-                {/* Ad Banner */}
-                <div className="w-full mt-4 rounded-2xl overflow-hidden border border-white/20 bg-white/10 backdrop-blur-sm">
-                    <a
-                        href="https://followus.link/signup"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-all"
-                    >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
-                            fu
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold" style={{ color: textColor }}>Create your free page</p>
-                            <p className="text-xs opacity-60 truncate" style={{ color: textColor }}>followus.link — Join thousands of creators</p>
-                        </div>
-                        <span className="text-xs font-semibold px-2 py-1 rounded-full bg-white/20 shrink-0" style={{ color: textColor }}>
-                            Free →
-                        </span>
-                    </a>
+                    {/* Footer */}
+                    <p className="text-xs mt-2 opacity-40" style={{ color: textColor }}>
+                        Powered by Followus
+                    </p>
                 </div>
-
-                {/* Footer */}
-                <p className="text-xs mt-2 opacity-40" style={{ color: textColor }}>
-                    Powered by Followus
-                </p>
             </div>
-        </div>
+        </>
     );
 }
