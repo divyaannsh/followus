@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Copy, Edit, Trash2, Plus, ArrowRight, Download, X, ExternalLink, QrCode, GripVertical, Pin, Play, Music, Clock } from "lucide-react"
+import { Copy, Edit, Trash2, Plus, ArrowRight, Download, X, ExternalLink, QrCode, GripVertical, Pin, Play, Music, Clock, Scissors, Link2 } from "lucide-react"
 import { useSelector } from "react-redux"
 import axios from "axios"
 import { toast } from "react-toastify"
@@ -191,6 +191,10 @@ export default function AdminPage() {
   const [open, setOpen] = useState(false);
   const [isOpenFiled, setIsOpenFiled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [shortLinks, setShortLinks] = useState([]);
+  const [shortUrlInput, setShortUrlInput] = useState("");
+  const [shortSlugInput, setShortSlugInput] = useState("");
+  const [shortLoading, setShortLoading] = useState(false);
 
   // DnD sensors
   const sensors = useSensors(
@@ -221,6 +225,7 @@ export default function AdminPage() {
       setProfileUrl(`${window.location.origin}/${username}`)
     }
     fetchLinks()
+    fetchShortLinks()
     fetchProfile()
   }, [username])
 
@@ -246,6 +251,50 @@ export default function AdminPage() {
       setLinks(Array.isArray(response.data) ? response.data : [])
     } catch (error) {
       console.error("fetchLinks error:", error)
+    }
+  };
+
+  const fetchShortLinks = async () => {
+    if (!username) return;
+    try {
+      const response = await axios.get(`/api/user/shortlinks?username=${username}`);
+      setShortLinks(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      toast.error("Failed to load short links");
+    }
+  };
+
+  const handleCreateShortLink = async (e) => {
+    e.preventDefault();
+    if (!shortUrlInput.trim()) {
+      toast.error("Enter a URL to shorten");
+      return;
+    }
+    setShortLoading(true);
+    try {
+      await axios.post("/api/user/shortlinks", {
+        username,
+        originalUrl: shortUrlInput.trim(),
+        customSlug: shortSlugInput.trim() || undefined,
+      });
+      toast.success("Short link created");
+      setShortUrlInput("");
+      setShortSlugInput("");
+      fetchShortLinks();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to create short link");
+    } finally {
+      setShortLoading(false);
+    }
+  };
+
+  const handleDeleteShortLink = async (id) => {
+    try {
+      await axios.delete(`/api/user/shortlinks?id=${id}`);
+      toast.success("Short link deleted");
+      fetchShortLinks();
+    } catch {
+      toast.error("Failed to delete short link");
     }
   };
 
@@ -713,6 +762,79 @@ export default function AdminPage() {
               </form>
             </div>
           )}
+
+          {/* Link Shortener */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Scissors size={18} className="text-indigo-500" />
+              <h3 className="font-semibold text-gray-900">Link Shortener</h3>
+            </div>
+            <form onSubmit={handleCreateShortLink} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                type="url"
+                value={shortUrlInput}
+                onChange={(e) => setShortUrlInput(e.target.value)}
+                placeholder="https://example.com/very/long/url"
+                className="md:col-span-2 rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-sm"
+              />
+              <input
+                type="text"
+                value={shortSlugInput}
+                onChange={(e) => setShortSlugInput(e.target.value)}
+                placeholder="custom-slug (optional)"
+                className="rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-sm"
+              />
+              <button
+                type="submit"
+                disabled={shortLoading}
+                className="md:col-span-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2.5 px-5 rounded-xl font-semibold hover:opacity-90 transition-all shadow-md disabled:opacity-60"
+              >
+                {shortLoading ? "Creating..." : "Create Short Link"}
+              </button>
+            </form>
+
+            <div className="space-y-2">
+              {shortLinks.length === 0 ? (
+                <p className="text-sm text-gray-400">No short links yet.</p>
+              ) : (
+                shortLinks.map((item) => {
+                  const shortUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/s/${item.slug}`;
+                  return (
+                    <div key={item._id} className="border border-gray-100 rounded-xl p-3 flex items-center gap-2">
+                      <Link2 size={14} className="text-indigo-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-indigo-600 truncate">/s/{item.slug}</p>
+                        <p className="text-xs text-gray-400 truncate">{item.originalUrl}</p>
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(shortUrl)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-indigo-50"
+                        title="Copy short URL"
+                      >
+                        <Copy size={14} />
+                      </button>
+                      <a
+                        href={shortUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-indigo-50"
+                        title="Open short URL"
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                      <button
+                        onClick={() => handleDeleteShortLink(item._id)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50"
+                        title="Delete short URL"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
 
           {/* Links List */}
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
