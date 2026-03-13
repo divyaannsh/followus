@@ -25,6 +25,16 @@ function AuthGuard({ children }) {
 }
 
 function MyApp({ Component, pageProps }) {
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // keep silent for users
+      });
+    });
+  }, []);
+
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
