@@ -44,7 +44,7 @@ export default function LoginForm() {
                 value={formData[name]}
                 onChange={handleChange}
                 placeholder={label}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-gray-800 text-white placeholder-gray-400 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           ))}

@@ -775,14 +775,14 @@ export default function AdminPage() {
                 value={shortUrlInput}
                 onChange={(e) => setShortUrlInput(e.target.value)}
                 placeholder="https://example.com/very/long/url"
-                className="md:col-span-2 rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-sm"
+                className="md:col-span-2 rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-sm text-gray-900"
               />
               <input
                 type="text"
                 value={shortSlugInput}
                 onChange={(e) => setShortSlugInput(e.target.value)}
                 placeholder="custom-slug (optional)"
-                className="rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-sm"
+                className="rounded-xl border-2 border-gray-200 p-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition-all text-sm text-gray-900"
               />
               <button
                 type="submit"
